@@ -14,10 +14,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env.local src/db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local src/db/seed.ts",
-    "key:generate": "tsx --env-file-if-exists=.env.local scripts/generate-key.ts"
+    "key:generate": "tsx --env-file-if-exists=.env.local scripts/generate-key.ts",
+    "worker": "tsx --env-file-if-exists=.env.local src/worker/index.ts",
+    "worker:dev": "tsx watch --env-file-if-exists=.env.local src/worker/index.ts"
   },
   "dependencies": {
     "bullmq": "^6.7.7",
+    "dockerode": "^5.0.1",
     "drizzle-orm": "^0.45.4",
     "ioredis": "^6.0.0",
     "iron-session": "^9.1.0",
@@ -31,6 +34,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/dockerode": "^4.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

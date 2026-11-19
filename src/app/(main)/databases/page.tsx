@@ -11,9 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Database } from "@/db/schema";
 import { cn } from "@/lib/cn";
 import { bytes, timeAgo } from "@/lib/format";
+import { ENGINES, usageCapacityBytes } from "@/server/database-catalog";
 import { connectionUrl } from "@/server/db-connection";
 import { listBackups, listDatabases } from "@/server/queries";
-import { backupNow, restoreBackup } from "./actions";
+import { ActionForm, SubmitButton } from "@/components/forms/action-form";
+import { Input } from "@/components/ui/field";
+import { backupNow, deleteDatabase, restoreBackup, retryProvision } from "./actions";
 
 export const metadata: Metadata = { title: "Databases" };
 
@@ -81,6 +84,7 @@ function DatabaseCard({ db, selected }: { db: DbRow; selected: boolean }) {
         </div>
         <Pill tone={pill.tone}>{pill.label}</Pill>
       </div>
+      <UsageMeter db={db} />
       <p className="m-0 text-[13px]">
         {db.links.length ? (
           <>
@@ -109,6 +113,22 @@ function DatabaseCard({ db, selected }: { db: DbRow; selected: boolean }) {
   );
 }
 
+function UsageMeter({ db }: { db: DbRow }) {
+  const cap = usageCapacityBytes(db.engine);
+  const pct = db.usageBytes != null ? Math.min(100, (100 * db.usageBytes) / cap) : null;
+  return (
+    <div>
+      <div className="flex justify-between text-[13px] text-muted">
+        <span>{ENGINES[db.engine].usageLabel}</span>
+        <span>{db.usageBytes != null ? `${bytes(db.usageBytes)} / ${bytes(cap)}` : "measuring…"}</span>
+      </div>
+      <div className="mt-1.5 h-1.5 rounded-sm bg-track" role="meter" aria-label={`${ENGINES[db.engine].usageLabel} used`} aria-valuenow={Math.round(pct ?? 0)} aria-valuemin={0} aria-valuemax={100}>
+        {pct != null && <div className={pct > 85 ? "h-1.5 rounded-sm bg-warn" : "h-1.5 rounded-sm bg-accent"} style={{ width: `${Math.max(pct, 1)}%` }} />}
+      </div>
+    </div>
+  );
+}
+
 async function Detail({ db }: { db: DbRow }) {
   const backups = await listBackups(db.id);
   const link = db.links[0];
@@ -119,11 +139,18 @@ async function Detail({ db }: { db: DbRow }) {
       <section aria-labelledby="detail-h" className="contents">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="detail-h" className="m-0 text-lg font-semibold">{db.name}</h2>
-          {db.backupsEnabled && (
-            <form action={backupNow.bind(null, db.id)}>
-              <Button type="submit">Back up now</Button>
-            </form>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {db.status === "failed" && (
+              <form action={retryProvision.bind(null, db.id)}>
+                <Button type="submit" variant="primary">Retry setup</Button>
+              </form>
+            )}
+            {db.backupsEnabled && db.status === "running" && (
+              <form action={backupNow.bind(null, db.id)}>
+                <Button type="submit">Back up now</Button>
+              </form>
+            )}
+          </div>
         </div>
         <ConnectionString databaseId={db.id} masked={connectionUrl(db, { mask: true })} label={label} />
         <div className="overflow-x-auto">
@@ -160,6 +187,22 @@ async function Detail({ db }: { db: DbRow }) {
             </tbody>
           </table>
         </div>
+        <details className="rounded-lg border border-err-border p-4">
+          <summary className="cursor-pointer font-semibold text-err">Delete {db.name}</summary>
+          <ActionForm action={deleteDatabase.bind(null, db.id)} className="mt-3">
+            
+              <>
+                <p className="m-0 text-muted">Stops the container and unlinks it from projects.</p>
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input type="checkbox" name="keepVolume" defaultChecked className="size-4 accent-[var(--accent)]" /> Keep the data volume (recommended)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Input name="confirm" mono placeholder={db.name} aria-label={`Type ${db.name} to confirm`} autoComplete="off" className="w-64" />
+                  <SubmitButton pendingLabel="Deleting…" className="border-err-border text-err">Delete database</SubmitButton>
+                </div>
+              </>
+          </ActionForm>
+        </details>
       </section>
     </Panel>
   );

@@ -6,6 +6,8 @@ import { DomainList } from "@/components/domains/domain-list";
 import { Panel, SectionHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { Skeleton } from "@/components/ui/skeleton";
+import { defaultHost } from "@/lib/domains";
+import { env } from "@/lib/env";
 import { shortSha, timeAgo } from "@/lib/format";
 import { healthPill } from "@/lib/status";
 import { loadProject } from "@/server/load-project";
@@ -88,7 +90,7 @@ async function Domains({ params }: { params: Params }) {
   return (
     <section aria-labelledby="domains-h" className="flex flex-col gap-3.5">
       <SectionHeader id="domains-h" title="Domains" action={<Link href={`/projects/${p.slug}/domains`} className="text-accent-text hover:underline">Manage domains →</Link>} />
-      <DomainList domains={rows.map((r) => r.domain)} defaultHost={rows.find((r) => r.domain.hostname.startsWith(`${p.slug}.`))?.domain.hostname} />
+      <DomainList domains={rows.map((r) => r.domain)} defaultHost={defaultHost(p.slug, env().APPS_DOMAIN)} />
     </section>
   );
 }

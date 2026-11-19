@@ -1,4 +1,3 @@
-import "server-only";
 import type { Database } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
 

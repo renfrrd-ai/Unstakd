@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { encrypt } from "@/lib/crypto";
+import { env } from "@/lib/env";
 import { appendLog, type LogLine } from "@/lib/logs";
 import { db, schema } from "./index";
 import type { DeployStep } from "./schema";
@@ -118,7 +119,7 @@ async function main() {
       }
       await tx.update(s.projects).set({ liveDeploymentId: live }).where(eq(s.projects.id, project.id));
 
-      await tx.insert(s.domains).values({ projectId: project.id, hostname: `${seed.name}.unstakd.com`, status: "active", verifiedAt: ago(9000), isPrimary: !seed.host });
+      await tx.insert(s.domains).values({ projectId: project.id, hostname: `${seed.name}.${env().APPS_DOMAIN}`, status: "active", verifiedAt: ago(9000), isPrimary: !seed.host });
       if (seed.host) {
         await tx.insert(s.domains).values({ projectId: project.id, hostname: seed.host, status: "active", isPrimary: true, verifiedAt: ago(8000) });
       }
