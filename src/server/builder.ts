@@ -1,5 +1,5 @@
 import { execFile, spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -48,6 +48,14 @@ export function runScript(dir: string) {
 }
 
 // Static when a known generator builds the site and nothing needs a server, or it's plain HTML.
+function nextStaticExport(dir: string) {
+  for (const name of ["next.config.ts", "next.config.mjs", "next.config.js", "next.config.cjs"]) {
+    const file = path.join(dir, name);
+    if (existsSync(file)) return /\boutput\s*:\s*["'`]export["'`]/.test(readFileSync(file, "utf8"));
+  }
+  return false;
+}
+
 export function detectStatic(dir: string, pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> } | null): StaticPlan | null {
   if (!pkg) {
     if (existsSync(path.join(dir, "index.html"))) return { buildCommand: null, outputDir: "." };
@@ -55,6 +63,8 @@ export function detectStatic(dir: string, pkg: { dependencies?: Record<string, s
     return null;
   }
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  // Next.js with `output: "export"` writes plain files to out/.
+  if (deps.next && pkg.scripts?.build && nextStaticExport(dir)) return { buildCommand: `${runScript(dir)} build`, outputDir: "out" };
   if (SERVER_DEPS.some((d) => deps[d]) || !pkg.scripts?.build) return null;
   const hit = STATIC_OUTPUT.find(([dep]) => deps[dep]);
   if (!hit) return null;

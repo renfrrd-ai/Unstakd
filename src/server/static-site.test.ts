@@ -31,6 +31,15 @@ describe("static detection", () => {
     expect((await detect(dir)).mode).toBe("railpack");
   });
 
+  it("treats a Next.js static export as static, other Next apps as servers", async () => {
+    await pkg({ next: "16.4.6", react: "19.3.0" });
+    expect((await detect(dir)).mode).toBe("railpack");
+    await writeFile(path.join(dir, "next.config.ts"), 'const c = { output: "standalone" };\nexport default c;\n');
+    expect((await detect(dir)).mode).toBe("railpack");
+    await writeFile(path.join(dir, "next.config.ts"), 'const c = {\n  output: "export",\n};\nexport default c;\n');
+    expect(await detect(dir)).toMatchObject({ mode: "static", framework: "Next.js 16", static: { buildCommand: "npm run build", outputDir: "out" } });
+  });
+
   it("needs a build script", async () => {
     await pkg({ vite: "^7" }, { dev: "vite" });
     expect((await detect(dir)).mode).toBe("railpack");
