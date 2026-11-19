@@ -5,10 +5,10 @@ import type { OpsJob } from "@/lib/queue";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
-import { removeRoute, setRoute } from "@/server/caddy";
+import { removeRoute } from "@/server/caddy";
+import { applyRoute } from "@/server/routing";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
 import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
-import { routeHosts } from "./deploy";
 import { checkDomains } from "./domains";
 import { prune } from "./housekeeping";
 import { sampleAppMetrics } from "./metrics";
@@ -103,7 +103,7 @@ export async function handleOps(job: Job<OpsJob>) {
         await removeRoute(project.slug);
       } else {
         await startContainer(live.containerName);
-        await setRoute(project.slug, await routeHosts(project), `${live.containerName}:${project.port}`);
+        await applyRoute(project, live.containerName);
       }
       return;
     }
@@ -111,7 +111,7 @@ export async function handleOps(job: Job<OpsJob>) {
       const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
       if (!project?.liveDeploymentId || project.state !== "active") return;
       const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
-      if (live?.containerName) await setRoute(project.slug, await routeHosts(project), `${live.containerName}:${project.port}`);
+      if (live?.containerName) await applyRoute(project, live.containerName);
       return;
     }
     case "teardown": {

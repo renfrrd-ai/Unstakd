@@ -7,13 +7,20 @@ const routeId = (slug: string) => `app-${slug}`;
 
 async function api(method: string, path: string, body?: unknown) {
   const origin = new URL(adminUrl()).origin;
-  const res = await fetch(`${adminUrl()}${path}`, {
-    method,
-    // The admin API rejects writes without an Origin it recognises.
-    headers: body === undefined ? { Origin: origin } : { Origin: origin, "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  return res;
+  const send = () =>
+    fetch(`${adminUrl()}${path}`, {
+      method,
+      // The admin API rejects writes without an Origin it recognises.
+      headers: body === undefined ? { Origin: origin } : { Origin: origin, "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  try {
+    return await send();
+  } catch (e) {
+    // Caddy drops admin connections when its config changes; a reused keep-alive socket then fails once.
+    if ((e as { cause?: { code?: string } }).cause?.code !== "UND_ERR_SOCKET") throw e;
+    return send();
+  }
 }
 
 function baseConfig() {
@@ -85,12 +92,26 @@ export async function ensureCaddy() {
   throw new Error("caddy did not accept the base config");
 }
 
-export async function setRoute(slug: string, hosts: string[], dial: string) {
+export async function setRoute(slug: string, hosts: string[], dial: string, redirect?: { from: string[]; to: string } | null) {
   await ensureCaddy();
+  const proxy = { handler: "reverse_proxy", upstreams: [{ dial }] };
   const route = {
     "@id": routeId(slug),
-    match: [{ host: hosts }],
-    handle: [{ handler: "reverse_proxy", upstreams: [{ dial }] }],
+    match: [{ host: [...hosts, ...(redirect?.from ?? [])] }],
+    handle: redirect
+      ? [
+          {
+            handler: "subroute",
+            routes: [
+              {
+                match: [{ host: redirect.from }],
+                handle: [{ handler: "static_response", status_code: 308, headers: { Location: [`{http.request.scheme}://${redirect.to}{http.request.uri}`] } }],
+              },
+              { handle: [proxy] },
+            ],
+          },
+        ]
+      : [proxy],
     terminal: true,
   };
   const replace = await api("PATCH", `/id/${routeId(slug)}`, route);

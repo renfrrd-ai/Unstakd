@@ -3,9 +3,8 @@ import { db, schema as s } from "@/db";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
-import { setRoute } from "@/server/caddy";
 import { checkDns } from "@/server/domain-check";
-import { routeHosts } from "./deploy";
+import { applyRoute } from "@/server/routing";
 
 async function httpsWorks(hostname: string) {
   try {
@@ -20,7 +19,7 @@ async function syncProjectRoute(projectId: string) {
   const [project] = await db().select().from(s.projects).where(eq(s.projects.id, projectId));
   if (!project?.liveDeploymentId || project.state !== "active") return;
   const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
-  if (live?.containerName) await setRoute(project.slug, await routeHosts(project), `${live.containerName}:${project.port}`);
+  if (live?.containerName) await applyRoute(project, live.containerName);
 }
 
 // Runs every minute: moves custom domains through pending → verified → active, or to misconfigured.

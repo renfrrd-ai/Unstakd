@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Deployment, DeployStep, Project } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
@@ -13,7 +13,8 @@ import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { readLog } from "@/lib/logs";
 import { buildDockerfile, buildRailpack, detect } from "@/server/builder";
-import { caddyEnabled, setRoute } from "@/server/caddy";
+import { caddyEnabled } from "@/server/caddy";
+import { applyRoute } from "@/server/routing";
 import { connectionUrl } from "@/server/db-connection";
 import { containerState, docker, ensureNetwork, imageExists, LABEL, NETWORK, removeContainer, securityOpts } from "@/server/docker";
 import { cloneRepo } from "@/server/git";
@@ -175,13 +176,13 @@ export async function runDeploy(deploymentId: string) {
       ? await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId))
       : [];
     await step("switch", async () => {
-      const hosts = await routeHosts(project);
       if (!caddyEnabled()) {
         log.warn("switch  no proxy configured (CADDY_ADMIN_URL unset); container is running but not routed");
         return;
       }
-      log.step(`switch  caddy route → ${containerName}:${project.port} for ${hosts.join(", ")}`);
-      await setRoute(project.slug, hosts, `${containerName}:${project.port}`);
+      const plan = await applyRoute(project, containerName);
+      log.step(`switch  caddy route → ${containerName}:${project.port} for ${plan.serve.join(", ")}`);
+      if (plan.redirect) log.info(`${plan.redirect.from.join(", ")} redirects to ${plan.redirect.to}`);
     });
 
     await db().transaction(async (tx) => {
@@ -241,13 +242,6 @@ async function containerEnv(project: Project) {
   return [...out].map(([k, v]) => `${k}=${v}`);
 }
 
-export async function routeHosts(project: Pick<Project, "id" | "slug">) {
-  const custom = await db()
-    .select({ hostname: s.domains.hostname })
-    .from(s.domains)
-    .where(and(eq(s.domains.projectId, project.id), inArray(s.domains.status, ["verified", "active"])));
-  return [...new Set([defaultHost(project.slug, env().APPS_DOMAIN), ...custom.map((c) => c.hostname)])];
-}
 
 async function healthCheck(containerName: string, url: string, log: DeployLogger, signal: AbortSignal) {
   log.info(`health  GET ${new URL(url).pathname}  waiting…`);

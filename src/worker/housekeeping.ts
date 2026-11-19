@@ -3,9 +3,9 @@ import path from "node:path";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { logDir } from "@/lib/logs";
-import { caddyEnabled, ensureCaddy, setRoute } from "@/server/caddy";
+import { caddyEnabled, ensureCaddy } from "@/server/caddy";
+import { applyRoute } from "@/server/routing";
 import { docker } from "@/server/docker";
-import { routeHosts } from "./deploy";
 
 const KEEP_IMAGES = Number(process.env.KEEP_IMAGES ?? 10);
 const BUILD_LOG_DAYS = Number(process.env.BUILD_LOG_DAYS ?? 30);
@@ -61,7 +61,7 @@ export async function reconcileRoutes(log: (l: string) => void = () => {}) {
     if (!live?.containerName) continue;
     const exists = await docker().getContainer(live.containerName).inspect().then(() => true, () => false);
     if (!exists) continue;
-    await setRoute(p.slug, await routeHosts(p), `${live.containerName}:${p.port}`);
+    await applyRoute(p, live.containerName);
     applied++;
   }
   log(`re-applied ${applied} route${applied === 1 ? "" : "s"}`);
