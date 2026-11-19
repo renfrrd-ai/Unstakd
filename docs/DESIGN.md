@@ -15,9 +15,9 @@ parts: panel, list rows, pills, mono metadata, the log viewer.
 
 ## Themes
 
-Dark ("Terminal Night") is the default. Light mirrors it with the same token names.
-Tokens are CSS custom properties on `:root` / `[data-theme="light"]` and mapped to
-Tailwind colors, so components never branch on the theme.
+Dark ("Terminal Night") and light share the same token names. Tokens are CSS custom
+properties written with `light-dark(<light>, <dark>)` in `src/app/globals.css` and mapped to
+Tailwind colors (`bg-panel`, `text-muted`, …), so components never branch on the theme.
 
 | Token | Dark | Light | Use |
 | --- | --- | --- | --- |
@@ -42,8 +42,9 @@ Tailwind colors, so components never branch on the theme.
 | `log-bg` | `#070908` | `#F1F4F2` | Log viewer |
 | `track` | `#1F2622` | `#E3E8E5` | Meter tracks |
 
-Theme selection: `system` (follows `prefers-color-scheme`) → user override `dark`/`light`,
-stored in a cookie so the server renders the right theme with no flash. The header
+Theme selection: follows `prefers-color-scheme` until the user picks one; the choice is
+stored in `localStorage` and applied by an inline `<head>` script before paint (no flash),
+via `data-theme` on `<html>`, which sets `color-scheme`. The header
 toggle is a pill button with a sun/moon icon and an `aria-label` naming the target mode.
 
 ## Type
