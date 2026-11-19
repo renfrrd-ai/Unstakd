@@ -14,6 +14,8 @@ export function describeEvent(e: Pick<AuditEvent, "action" | "target" | "details
       return { text: `Database ${e.target} deleted`, detail: "" };
     case "database.failed":
       return { text: `Database ${e.target} failed to start`, detail: String(d.engine ?? "") };
+    case "database.tunnel":
+      return { text: `Tunnel access enabled for ${e.target}`, detail: "loopback port" };
     case "database.revealed":
       return { text: `Connection string for ${e.target} revealed`, detail: "" };
     case "domain.certificate":

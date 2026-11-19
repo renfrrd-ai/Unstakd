@@ -43,6 +43,13 @@
       "when": 1795099566519,
       "tag": "0005_app_metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795100056153,
+      "tag": "0006_database_local_port",
+      "breakpoints": true
     }
   ]
 }

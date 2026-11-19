@@ -21,7 +21,7 @@ export async function handleOps(job: Job<OpsJob>) {
     case "provision-db": {
       const [row] = await db().select().from(s.databases).where(eq(s.databases.id, data.databaseId));
       if (!row) return;
-      const ok = await provisionDatabase(row, log);
+      const ok = await provisionDatabase(row, log, { recreate: data.recreate });
       await audit(ok ? "database.created" : "database.failed", row.name, { engine: `${row.engine} ${row.version}` });
       if (!ok) {
         await notify({ level: "error", title: `Database ${row.name} failed to start`, body: "Open Databases to retry setup." });

@@ -131,6 +131,8 @@ export const databases = pgTable("databases", {
   volumeName: text("volume_name").notNull(),
   credentialsEnc: text("credentials_enc").notNull(),
   backupsEnabled: boolean("backups_enabled").notNull().default(true),
+  // Published on the server's loopback only, for SSH tunnels from tools like TablePlus.
+  localPort: integer("local_port").unique(),
   usageBytes: bigint("usage_bytes", { mode: "number" }),
   usageCheckedAt: timestamp("usage_checked_at", { withTimezone: true }),
   createdAt: createdAt(),

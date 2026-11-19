@@ -12,7 +12,10 @@ import type { Database } from "@/db/schema";
 import { cn } from "@/lib/cn";
 import { bytes, timeAgo } from "@/lib/format";
 import { ENGINES, usageCapacityBytes } from "@/server/database-catalog";
-import { connectionUrl } from "@/server/db-connection";
+import { connectionUrl, type DbCredentials } from "@/server/db-connection";
+import { TunnelPanel } from "@/components/databases/tunnel-panel";
+import { decrypt } from "@/lib/crypto";
+import { env } from "@/lib/env";
 import { listBackups, listDatabases } from "@/server/queries";
 import { ActionForm, SubmitButton } from "@/components/forms/action-form";
 import { Input } from "@/components/ui/field";
@@ -117,6 +120,12 @@ function DatabaseCard({ db, selected }: { db: DbRow; selected: boolean }) {
   );
 }
 
+// Only the non-secret parts (user and database name) for the tunnel instructions.
+function publicCreds(db: DbRow) {
+  const c = JSON.parse(decrypt(db.credentialsEnc)) as DbCredentials;
+  return { user: c.user, database: c.database };
+}
+
 function UsageMeter({ db }: { db: DbRow }) {
   const cap = usageCapacityBytes(db.engine);
   const pct = db.usageBytes != null ? Math.min(100, (100 * db.usageBytes) / cap) : null;
@@ -157,6 +166,14 @@ async function Detail({ db }: { db: DbRow }) {
           </div>
         </div>
         <ConnectionString databaseId={db.id} masked={connectionUrl(db, { mask: true })} label={label} />
+        <details className="group">
+          <summary className="inline-flex h-11 cursor-pointer list-none items-center rounded-lg border border-border-strong bg-panel px-4 font-semibold hover:bg-panel-2 [&::-webkit-details-marker]:hidden">
+            Open SSH tunnel
+          </summary>
+          <div className="mt-3">
+            <TunnelPanel db={db} server={env().EDGE_IP || env().EDGE_HOST} sshUser={process.env.SSH_USER ?? "root"} {...publicCreds(db)} />
+          </div>
+        </details>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <caption className="pb-2 text-left font-semibold">Backups</caption>

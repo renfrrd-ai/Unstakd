@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { max } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Database } from "@/db/schema";
 import { encrypt } from "@/lib/crypto";
@@ -22,12 +23,20 @@ export function imageFor(d: Pick<Database, "engine" | "version">) {
   return `${d.engine}:${d.version}-alpine`;
 }
 
+export const LOCAL_PORT_BASE = Number(process.env.DB_LOCAL_PORT_BASE ?? 15432);
+
+export async function nextLocalPort() {
+  const [row] = await db().select({ max: max(s.databases.localPort) }).from(s.databases);
+  return Math.max(LOCAL_PORT_BASE, (row?.max ?? LOCAL_PORT_BASE - 1) + 1);
+}
+
 export async function insertDatabase(input: { name: string; engine: Engine; version: string; backupsEnabled: boolean }) {
   const [row] = await db()
     .insert(s.databases)
     .values({
       ...input,
       status: "provisioning",
+      localPort: await nextLocalPort(),
       containerName: dbContainerName(input.name),
       volumeName: dbVolumeName(input.name),
       credentialsEnc: encrypt(JSON.stringify(newCredentials(input.engine, input.name))),

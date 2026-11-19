@@ -54,7 +54,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 - [ ] Static-site mode (D9)
 - [x] Runtime metrics: CPU and memory charts (24h) and crash restarts per app (R6)
 - [x] www ↔ apex redirects to the primary domain (N3)
-- [ ] SSH tunnel for database tools (B4)
+- [x] SSH tunnel access for database tools: loopback-only port + instructions (B4)
 - [ ] CLI (A2)
 - [x] Alerts to Discord / any webhook (A3); email waits on SMTP credentials
 

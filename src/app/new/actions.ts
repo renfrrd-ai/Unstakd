@@ -10,7 +10,7 @@ import { env } from "@/lib/env";
 import { queues } from "@/lib/queue";
 import { parseDotEnv, REPO, SIZES, slugSchema, type FormState, type Size } from "@/lib/validation";
 import { audit } from "@/server/audit";
-import { dbContainerName, dbVolumeName, ENGINES, newCredentials } from "@/server/database-catalog";
+import { dbContainerName, dbVolumeName, ENGINES, newCredentials, nextLocalPort } from "@/server/database-catalog";
 import { createDeployment } from "@/server/deployments";
 import { requireUser } from "@/server/session";
 
@@ -74,6 +74,7 @@ export async function createProject(_prev: FormState, data: FormData): Promise<F
           engine: "postgres",
           version: ENGINES.postgres.versions[0],
           status: "provisioning",
+          localPort: await nextLocalPort(),
           containerName: dbContainerName(dbName),
           volumeName: dbVolumeName(dbName),
           credentialsEnc: encrypt(JSON.stringify(newCredentials("postgres", dbName))),

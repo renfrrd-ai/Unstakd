@@ -12,7 +12,7 @@ export type OpsJob =
   | { kind: "db-stats" }
   | { kind: "app-stats" }
   | { kind: "stop-container"; containerName: string }
-  | { kind: "provision-db"; databaseId: string }
+  | { kind: "provision-db"; databaseId: string; recreate?: boolean }
   | { kind: "restore"; backupId: string }
   | { kind: "standby"; projectId: string }
   | { kind: "start"; projectId: string }

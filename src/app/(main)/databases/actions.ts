@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db, schema as s } from "@/db";
 import { queues } from "@/lib/queue";
 import { slugSchema, type FormState } from "@/lib/validation";
-import { ENGINES, insertDatabase, type Engine } from "@/server/database-catalog";
+import { ENGINES, insertDatabase, nextLocalPort, type Engine } from "@/server/database-catalog";
 import { audit } from "@/server/audit";
 import { connectionUrl } from "@/server/db-connection";
 import { requireUser } from "@/server/session";
@@ -84,5 +84,15 @@ export async function retryProvision(rawId: string) {
   const row = await load(rawId);
   await db().update(s.databases).set({ status: "provisioning" }).where(eq(s.databases.id, row.id));
   await queues().ops.add("provision-db", { kind: "provision-db", databaseId: row.id });
+  refresh();
+}
+
+// Older databases were created without a loopback port; recreate the container with one (data kept).
+export async function enableTunnel(rawId: string) {
+  const row = await load(rawId);
+  if (row.localPort) return;
+  await db().update(s.databases).set({ localPort: await nextLocalPort() }).where(eq(s.databases.id, row.id));
+  await queues().ops.add("provision-db", { kind: "provision-db", databaseId: row.id, recreate: true });
+  await audit("database.tunnel", row.name);
   refresh();
 }

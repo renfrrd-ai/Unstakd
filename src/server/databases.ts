@@ -22,10 +22,11 @@ async function ready(d: Database, creds: DbCredentials) {
   return r.output.includes("PONG");
 }
 
-export async function provisionDatabase(d: Database, log: (line: string) => void = () => {}) {
+export async function provisionDatabase(d: Database, log: (line: string) => void = () => {}, { recreate = false } = {}) {
   const creds = JSON.parse(decrypt(d.credentialsEnc)) as DbCredentials;
   const image = imageFor(d);
   const engine = ENGINES[d.engine];
+  const port = d.engine === "postgres" ? 5432 : 6379;
 
   await ensureNetwork();
   await ensureVolume(d.volumeName);
@@ -34,7 +35,7 @@ export async function provisionDatabase(d: Database, log: (line: string) => void
 
   let state = await containerState(d.containerName);
   // A retry rebuilds the container from scratch; the data volume is kept.
-  if (state.exists && d.status !== "running") {
+  if (state.exists && (d.status !== "running" || recreate)) {
     await removeContainer(d.containerName);
     state = await containerState(d.containerName);
   }
@@ -46,10 +47,13 @@ export async function provisionDatabase(d: Database, log: (line: string) => void
       Env: d.engine === "postgres" ? [`POSTGRES_USER=${creds.user}`, `POSTGRES_PASSWORD=${creds.password}`, `POSTGRES_DB=${creds.database}`] : [],
       Cmd: d.engine === "redis" ? ["redis-server", "--requirepass", creds.password, "--appendonly", "yes"] : undefined,
       Labels: { [`${LABEL}.managed`]: "true", [`${LABEL}.kind`]: "database", [`${LABEL}.database`]: d.name },
+      ExposedPorts: { [`${port}/tcp`]: {} },
       HostConfig: {
         NetworkMode: NETWORK(),
         RestartPolicy: { Name: "unless-stopped" },
         Mounts: [{ Type: "volume", Source: d.volumeName, Target: dataMount(d) }],
+        // Loopback only: never reachable from the internet, only through SSH on the server.
+        PortBindings: d.localPort ? { [`${port}/tcp`]: [{ HostIp: "127.0.0.1", HostPort: String(d.localPort) }] } : undefined,
         Memory: engine.memoryMb * 1024 * 1024,
         SecurityOpt: securityOpts(),
       },
