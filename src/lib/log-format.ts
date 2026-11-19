@@ -15,3 +15,7 @@ export function stamp(ms: number) {
   const s = ms / 1000;
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${(s % 60).toFixed(1).padStart(4, "0")}`;
 }
+
+// Published on Redis while a deploy runs. `seq` is the line's index in the log file,
+// so a reader that has already sent N file lines forwards only messages with seq >= N.
+export type LogMessage = (LogLine & { seq: number }) | { end: true };

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { encrypt } from "@/lib/crypto";
+import { appendLog, type LogLine } from "@/lib/logs";
 import { db, schema } from "./index";
 import type { DeployStep } from "./schema";
 
@@ -46,6 +47,33 @@ const seeds: Seed[] = [
   { name: "nn-visualizer", state: "standby", framework: "Vite", deploys: [{ msg: "pooling step animation", minAgo: 10080, status: "live" }] },
 ];
 
+function sampleLog(failed: boolean): LogLine[] {
+  const ok: [number, LogLine["level"], string][] = [
+    [0, "step", "clone  github.com/renfred/app @ main"],
+    [700, "info", "cloned in 0.7s"],
+    [800, "step", "build  railpack"],
+    [1900, "info", "detected Next.js 15 · Node 22 · pnpm"],
+    [34000, "info", "pnpm install --frozen-lockfile  (cached)"],
+    [72000, "info", "▲ Next.js 15 · compiled successfully"],
+    [74000, "step", "push  registry.local/app"],
+    [78000, "step", "start  container on app-net, port 3000"],
+    [80000, "info", "health  GET /api/health  waiting…"],
+  ];
+  const tail: [number, LogLine["level"], string][] = failed
+    ? [
+        [80900, "warn", "prisma:warn query engine library not found for linux-musl-openssl-3.0.x"],
+        [81200, "err", "Error: PrismaClientInitializationError"],
+        [110000, "err", "health  no response in 30s · giving up"],
+        [110100, "info", "stopped new container · traffic stays on the previous deploy"],
+      ]
+    : [
+        [81200, "info", "health  200 OK in 1.2s"],
+        [81300, "step", "switch  caddy route → new container"],
+        [111400, "info", "stopped previous container after 30s grace"],
+      ];
+  return [...ok, ...tail].map(([at, level, text]) => ({ at, level, text }));
+}
+
 async function main() {
   const d = db();
   await d.transaction(async (tx) => {
@@ -86,6 +114,7 @@ async function main() {
           })
           .returning();
         if (dep.status === "live") live = row.id;
+        if (dep.status !== "building") await appendLog(row.id, sampleLog(dep.status === "failed"));
       }
       await tx.update(s.projects).set({ liveDeploymentId: live }).where(eq(s.projects.id, project.id));
 
