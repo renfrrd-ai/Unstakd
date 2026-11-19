@@ -7,7 +7,8 @@ import { docker, LABEL } from "./docker";
 
 const run = promisify(execFile);
 
-export type Detected = { mode: "dockerfile" | "railpack"; framework: string | null; port: number | null };
+export type StaticPlan = { buildCommand: string | null; outputDir: string };
+export type Detected = { mode: "dockerfile" | "railpack" | "static"; framework: string | null; port: number | null; static?: StaticPlan };
 
 const FRAMEWORKS: [string, string][] = [
   ["next", "Next.js"],
@@ -20,14 +21,57 @@ const FRAMEWORKS: [string, string][] = [
   ["fastify", "Fastify"],
   ["hono", "Hono"],
   ["express", "Express"],
+  ["react-scripts", "Create React App"],
+  ["gatsby", "Gatsby"],
+  ["@docusaurus/core", "Docusaurus"],
+  ["vitepress", "VitePress"],
+  ["@11ty/eleventy", "Eleventy"],
 ];
+
+// Generators whose `build` produces plain files, and where they put them.
+const STATIC_OUTPUT: [string, string][] = [
+  ["vitepress", ".vitepress/dist"],
+  ["@docusaurus/core", "build"],
+  ["gatsby", "public"],
+  ["@11ty/eleventy", "_site"],
+  ["react-scripts", "build"],
+  ["astro", "dist"],
+  ["vite", "dist"],
+];
+// Any of these means the app needs a running server.
+const SERVER_DEPS = ["next", "nuxt", "@remix-run/node", "@react-router/node", "@sveltejs/kit", "express", "fastify", "hono", "@nestjs/core", "koa", "@astrojs/node"];
+
+export function runScript(dir: string) {
+  if (existsSync(path.join(dir, "pnpm-lock.yaml"))) return "pnpm run";
+  if (existsSync(path.join(dir, "yarn.lock"))) return "yarn";
+  return "npm run";
+}
+
+// Static when a known generator builds the site and nothing needs a server, or it's plain HTML.
+export function detectStatic(dir: string, pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> } | null): StaticPlan | null {
+  if (!pkg) {
+    if (existsSync(path.join(dir, "index.html"))) return { buildCommand: null, outputDir: "." };
+    if (existsSync(path.join(dir, "public", "index.html"))) return { buildCommand: null, outputDir: "public" };
+    return null;
+  }
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (SERVER_DEPS.some((d) => deps[d]) || !pkg.scripts?.build) return null;
+  const hit = STATIC_OUTPUT.find(([dep]) => deps[dep]);
+  if (!hit) return null;
+  let outputDir = hit[1];
+  // `vitepress build docs` puts the output under docs/.
+  const vp = /vitepress build\s+([\w./-]+)/.exec(pkg.scripts.build);
+  if (hit[0] === "vitepress" && vp) outputDir = path.posix.join(vp[1], ".vitepress/dist");
+  return { buildCommand: `${runScript(dir)} build`, outputDir };
+}
 
 export async function detect(dir: string): Promise<Detected> {
   const hasDockerfile = existsSync(path.join(dir, "Dockerfile"));
   let framework: string | null = null;
   let port: number | null = null;
+  let pkg = null;
   try {
-    const pkg = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
+    pkg = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
     const deps = { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>;
     const hit = FRAMEWORKS.find(([dep]) => deps[dep]);
     if (hit) framework = `${hit[1]} ${String(deps[hit[0]]).replace(/^[^\d]*/, "").split(".")[0]}`.trim();
@@ -42,7 +86,10 @@ export async function detect(dir: string): Promise<Detected> {
     const expose = /^\s*EXPOSE\s+(\d+)/im.exec(df);
     if (expose) port = Number(expose[1]);
   }
-  return { mode: hasDockerfile ? "dockerfile" : "railpack", framework, port };
+  if (hasDockerfile) return { mode: "dockerfile", framework, port };
+  const plan = framework === "Python" || framework === "Go" ? null : detectStatic(dir, pkg);
+  if (plan) return { mode: "static", framework: framework === "Node" ? null : (framework ?? "HTML"), port: null, static: plan };
+  return { mode: "railpack", framework, port };
 }
 
 export async function railpackAvailable() {

@@ -6,7 +6,8 @@ import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
 import { previewRouteId, removeRoute } from "@/server/caddy";
-import { applyRoute } from "@/server/routing";
+import { applyRoute, upstreamFor } from "@/server/routing";
+import { pruneSites } from "@/server/static-site";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
 import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
 import { checkDomains } from "./domains";
@@ -89,6 +90,7 @@ export async function handleOps(job: Job<OpsJob>) {
       await removeRoute(project.slug, previewRouteId(project.slug, data.pr));
       const containers = await docker().listContainers({ all: true, filters: { label: [`${LABEL}.project=${project.slug}`, `${LABEL}.preview=${data.pr}`] } });
       for (const c of containers) await removeContainer(c.Id);
+      await pruneSites(project.slug, new Set(), (key) => key.startsWith(`pr${data.pr}-`)).catch(() => {});
       await db()
         .update(s.deployments)
         .set({ status: "superseded" })
@@ -110,13 +112,14 @@ export async function handleOps(job: Job<OpsJob>) {
       const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
       if (!project?.liveDeploymentId) return;
       const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
-      if (!live?.containerName) return;
+      if (!live || !upstreamFor(project, live)) return;
+      // Static sites have no container: standby just takes the route down.
       if (data.kind === "standby") {
-        await stopContainer(live.containerName);
+        if (live.containerName) await stopContainer(live.containerName);
         await removeRoute(project.slug);
       } else {
-        await startContainer(live.containerName);
-        await applyRoute(project, live.containerName);
+        if (live.containerName) await startContainer(live.containerName);
+        await applyRoute(project, live);
       }
       return;
     }
@@ -124,7 +127,7 @@ export async function handleOps(job: Job<OpsJob>) {
       const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
       if (!project?.liveDeploymentId || project.state !== "active") return;
       const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
-      if (live?.containerName) await applyRoute(project, live.containerName);
+      if (live && upstreamFor(project, live)) await applyRoute(project, live);
       return;
     }
     case "teardown": {
@@ -133,6 +136,7 @@ export async function handleOps(job: Job<OpsJob>) {
       for (const c of containers) await removeContainer(c.Id);
       const images = await docker().listImages({ filters: { reference: [`unstakd/${data.slug}`] } });
       for (const img of images) await docker().getImage(img.Id).remove({ force: true }).catch(() => {});
+      await pruneSites(data.slug).catch((e) => log(`couldn't remove static files: ${(e as Error).message}`));
       return;
     }
     case "destroy-db":

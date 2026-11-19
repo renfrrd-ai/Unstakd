@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { checkDns } from "@/server/domain-check";
-import { applyRoute } from "@/server/routing";
+import { applyRoute, upstreamFor } from "@/server/routing";
 
 async function httpsWorks(hostname: string) {
   try {
@@ -19,7 +19,7 @@ async function syncProjectRoute(projectId: string) {
   const [project] = await db().select().from(s.projects).where(eq(s.projects.id, projectId));
   if (!project?.liveDeploymentId || project.state !== "active") return;
   const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
-  if (live?.containerName) await applyRoute(project, live.containerName);
+  if (live && upstreamFor(project, live)) await applyRoute(project, live);
 }
 
 // Runs every minute: moves custom domains through pending → verified → active, or to misconfigured.

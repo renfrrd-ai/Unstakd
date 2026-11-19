@@ -7,13 +7,15 @@ import { Field, Input, Select, SuffixInput } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
 import { SIZES } from "@/lib/validation";
 
-type Detected = { mode: "dockerfile" | "railpack"; framework: string | null; port: number | null };
+import type { Detected } from "@/server/builder";
 
 export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomain, steps }: { repo: string; branch: string; detected: Detected; suggestedSlug: string; appsDomain: string; steps: ReactNode }) {
   const [slug, setSlug] = useState(suggestedSlug);
   const [port, setPort] = useState(String(detected.port ?? 3000));
   const [health, setHealth] = useState("/");
   const host = `${slug || "your-app"}.${appsDomain}`;
+  const isStatic = detected.mode === "static";
+  const builtWith = detected.mode === "dockerfile" ? "your Dockerfile" : isStatic ? (detected.static?.buildCommand ? <code className="font-mono text-[13px]">{detected.static.buildCommand}</code> : "no build step") : "Railpack";
 
   return (
     <ActionForm action={createProject} resetOnSuccess={false} className="gap-7">
@@ -32,9 +34,15 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
           <Panel className="flex flex-wrap items-center gap-4 px-5 py-4.5">
             <div className="flex size-11 items-center justify-center rounded-[10px] bg-panel-2 font-mono font-bold">{detected.framework?.[0] ?? (detected.mode === "dockerfile" ? "D" : "?")}</div>
             <div className="flex-[1_1_200px]">
-              <div className="font-semibold">{detected.framework ? `Detected ${detected.framework}` : detected.mode === "dockerfile" ? "Detected a Dockerfile" : "Couldn’t detect the stack"}</div>
+              <div className="font-semibold">
+                {isStatic ? `Static site${detected.framework ? ` · ${detected.framework}` : ""}` : detected.framework ? `Detected ${detected.framework}` : detected.mode === "dockerfile" ? "Detected a Dockerfile" : "Couldn’t detect the stack"}
+              </div>
               <div className="mt-0.5 text-[13px] text-muted">
-                {detected.mode === "dockerfile" ? "Your Dockerfile will be used to build it." : "Railpack will build it. Add a Dockerfile to override."}
+                {detected.mode === "dockerfile"
+                  ? "Your Dockerfile will be used to build it."
+                  : isStatic
+                    ? "Caddy serves the built files directly: no container, nothing to keep running."
+                    : "Railpack will build it. Add a Dockerfile to override."}
               </div>
             </div>
           </Panel>
@@ -43,8 +51,19 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
               <SuffixInput name="slug" required value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} suffix={`.${appsDomain}`} autoComplete="off" />
             </Field>
             <Field label="Branch"><Input name="branch" mono required defaultValue={branch} /></Field>
-            <Field label="Port"><Input name="port" type="number" mono required value={port} onChange={(e) => setPort(e.target.value)} /></Field>
-            <Field label="Health check path"><Input name="healthPath" mono required value={health} onChange={(e) => setHealth(e.target.value)} /></Field>
+            {isStatic ? (
+              <>
+                <input type="hidden" name="port" value={port} />
+                <input type="hidden" name="healthPath" value={health} />
+                <Field label="Build command"><Input name="buildCommand" mono defaultValue={detected.static?.buildCommand ?? ""} placeholder="none" autoComplete="off" /></Field>
+                <Field label="Output directory"><Input name="outputDir" mono defaultValue={detected.static?.outputDir ?? "dist"} autoComplete="off" /></Field>
+              </>
+            ) : (
+              <>
+                <Field label="Port"><Input name="port" type="number" mono required value={port} onChange={(e) => setPort(e.target.value)} /></Field>
+                <Field label="Health check path"><Input name="healthPath" mono required value={health} onChange={(e) => setHealth(e.target.value)} /></Field>
+              </>
+            )}
             <Field label="Size" className="sm:col-span-2">
               <Select name="size" defaultValue="medium">
                 {Object.entries(SIZES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -73,8 +92,8 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
         <Panel className="flex flex-[1_1_300px] flex-col gap-4 p-6">
           <h2 className="m-0 font-display text-xl font-bold">What happens next</h2>
           <ol className="m-0 flex list-decimal flex-col gap-2.5 pl-5 leading-snug text-soft marker:text-dim">
-            <li>Build with {detected.mode === "dockerfile" ? "your Dockerfile" : "Railpack"}, about 1–2 minutes</li>
-            <li>Start the container and wait for {health || "/"} on port {port}</li>
+            <li>Build with {builtWith}{isStatic ? "" : ", about 1–2 minutes"}</li>
+            <li>{isStatic ? "Publish the output and check it has an index.html" : `Start the container and wait for ${health || "/"} on port ${port}`}</li>
             <li>Go live at <span className="font-mono text-[13px] break-all">{host}</span></li>
             <li>Redeploy from the dashboard; every push to {branch} once the GitHub App is connected</li>
           </ol>

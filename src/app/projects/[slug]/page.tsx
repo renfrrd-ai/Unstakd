@@ -79,8 +79,16 @@ async function Summary({ params }: { params: Params }) {
         </Fact>
         <Fact label="Branch"><span className="font-mono text-[13px]">{p.branch}</span></Fact>
         <Fact label="Build">{p.buildMode === "dockerfile" ? "Dockerfile" : p.buildMode === "static" ? "Static site" : "Railpack"}{p.framework ? ` · ${p.framework}` : ""}</Fact>
-        <Fact label="Resources">{size}</Fact>
-        <Fact label="Health check"><span className="font-mono text-[13px]">GET {p.healthPath} · port {p.port}</span></Fact>
+        {p.buildMode === "static" ? (
+          <Fact label="Output">
+            <span className="font-mono text-[13px]">{p.buildCommand ?? "auto"} → {p.outputDir ?? "auto"}/</span>
+          </Fact>
+        ) : (
+          <>
+            <Fact label="Resources">{size}</Fact>
+            <Fact label="Health check"><span className="font-mono text-[13px]">GET {p.healthPath} · port {p.port}</span></Fact>
+          </>
+        )}
         <Fact label="Linked database">
           {dbs.length ? dbs.map((d) => <Link key={d.name} href="/databases" className="mr-2 text-accent-text hover:underline">{d.name}</Link>) : <span className="text-muted">none</span>}
         </Fact>
@@ -91,7 +99,8 @@ async function Summary({ params }: { params: Params }) {
 
 async function Resources({ params }: { params: Params }) {
   const p = await loadProject(params);
-  if (!p.live) return null;
+  // Static sites have no container to measure.
+  if (!p.live?.containerName) return null;
   const { rows, restarts, now } = await appMetrics(p.id);
   const limit = p.memoryMb * 1024 * 1024;
   const latest = rows.at(-1);

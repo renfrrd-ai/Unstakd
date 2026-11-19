@@ -94,9 +94,30 @@ export async function ensureCaddy() {
 
 export const previewRouteId = (slug: string, pr: number) => `preview-${slug}-${pr}`;
 
-export async function setRoute(slug: string, hosts: string[], dial: string, redirect?: { from: string[]; to: string } | null, id = routeId(slug)) {
+// Where a route sends traffic: a container (host:port) or a directory of static files.
+export type Upstream = { dial: string } | { root: string };
+
+function serveHandlers(up: Upstream) {
+  if ("dial" in up) return [{ handler: "reverse_proxy", upstreams: [{ dial: up.dial }] }];
+  // Pretty URLs (/about → about.html or about/index.html), then fall back to /index.html for SPAs.
+  return [
+    { handler: "encode", encodings: { zstd: {}, gzip: {} } },
+    {
+      handler: "subroute",
+      routes: [
+        {
+          match: [{ file: { root: up.root, try_files: ["{http.request.uri.path}", "{http.request.uri.path}/index.html", "{http.request.uri.path}.html", "/index.html"] } }],
+          handle: [{ handler: "rewrite", uri: "{http.matchers.file.relative}" }],
+        },
+        { handle: [{ handler: "file_server", root: up.root }] },
+      ],
+    },
+  ];
+}
+
+export async function setRoute(slug: string, hosts: string[], upstream: Upstream, redirect?: { from: string[]; to: string } | null, id = routeId(slug)) {
   await ensureCaddy();
-  const proxy = { handler: "reverse_proxy", upstreams: [{ dial }] };
+  const serve = serveHandlers(upstream);
   const route = {
     "@id": id,
     match: [{ host: [...hosts, ...(redirect?.from ?? [])] }],
@@ -109,11 +130,11 @@ export async function setRoute(slug: string, hosts: string[], dial: string, redi
                 match: [{ host: redirect.from }],
                 handle: [{ handler: "static_response", status_code: 308, headers: { Location: [`{http.request.scheme}://${redirect.to}{http.request.uri}`] } }],
               },
-              { handle: [proxy] },
+              { handle: serve },
             ],
           },
         ]
-      : [proxy],
+      : serve,
     terminal: true,
   };
   const replace = await api("PATCH", `/id/${id}`, route);
@@ -129,9 +150,10 @@ export async function removeRoute(slug: string, id = routeId(slug)) {
   }
 }
 
-export async function getRoute(slug: string): Promise<{ hosts: string[]; dial: string } | null> {
+export async function getRoute(slug: string): Promise<{ hosts: string[]; dial: string; root: string } | null> {
   const res = await api("GET", `/id/${routeId(slug)}`);
   if (!res.ok) return null;
   const r = await res.json();
-  return { hosts: r.match?.[0]?.host ?? [], dial: r.handle?.[0]?.upstreams?.[0]?.dial ?? "" };
+  const text = JSON.stringify(r.handle ?? []);
+  return { hosts: r.match?.[0]?.host ?? [], dial: /"dial":"([^"]+)"/.exec(text)?.[1] ?? "", root: /"root":"([^"]+)"/.exec(text)?.[1] ?? "" };
 }

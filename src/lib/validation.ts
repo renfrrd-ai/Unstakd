@@ -5,6 +5,19 @@ export const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 export const REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 
 export const slugSchema = z.string().trim().toLowerCase().regex(SLUG, "Use 1–40 lowercase letters, numbers or dashes");
+// Static mode: blank means auto-detect (stored as null).
+export const buildCommandSchema = z
+  .string()
+  .trim()
+  .max(500, "Keep the build command under 500 characters")
+  .transform((v) => v || null);
+export const outputDirSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .regex(/^[\w./-]*$/, "Output directory: letters, numbers, . / - and _ only")
+  .refine((v) => !v.split("/").includes("..") && !v.startsWith("/"), "Output directory must be inside the repo")
+  .transform((v) => v.replace(/^\.\/+/, "").replace(/\/+$/, "") || null);
 export const envKeySchema = z.string().trim().regex(ENV_KEY, "Keys use letters, numbers and _ and can't start with a number");
 
 export const SIZES = {

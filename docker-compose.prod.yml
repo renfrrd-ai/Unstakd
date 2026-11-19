@@ -46,6 +46,7 @@ services:
       - caddydata:/data
       - caddyconfig:/config
       - ./docker/caddy/prod.json:/etc/caddy/prod.json:ro
+      - sites:/srv/sites:ro
     networks: [default, unstakd]
 
   buildkit:
@@ -99,4 +100,7 @@ volumes:
   redisdata:
   caddydata:
   caddyconfig:
+  # Static sites; the worker writes them through a helper container.
+  sites:
+    name: unstakd-sites
   buildkit:

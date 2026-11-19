@@ -1,9 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db, schema as s } from "@/db";
-import type { Project } from "@/db/schema";
+import type { Deployment, Project } from "@/db/schema";
 import { defaultHost } from "@/lib/domains";
 import { env } from "@/lib/env";
-import { setRoute } from "./caddy";
+import { setRoute, type Upstream } from "./caddy";
+import { isSiteRef, siteRoot } from "./static-site";
 
 export type RoutePlan = { serve: string[]; redirect: { from: string[]; to: string } | null };
 
@@ -25,8 +26,18 @@ export async function planRoute(project: Pick<Project, "id" | "slug">): Promise<
   return splitHosts(primary, [fallback, ...custom.map((d) => d.hostname)]);
 }
 
-export async function applyRoute(project: Pick<Project, "id" | "slug" | "port">, containerName: string) {
+// A static deploy serves its files; anything else proxies to its container. Null if neither exists.
+export function upstreamFor(project: Pick<Project, "port">, d: Pick<Deployment, "containerName" | "imageTag">): Upstream | null {
+  if (isSiteRef(d.imageTag) && !d.containerName) return { root: siteRoot(d.imageTag) };
+  return d.containerName ? { dial: `${d.containerName}:${project.port}` } : null;
+}
+
+export const describeUpstream = (up: Upstream) => ("dial" in up ? up.dial : `files in ${up.root}`);
+
+export async function applyRoute(project: Pick<Project, "id" | "slug" | "port">, deployment: Pick<Deployment, "containerName" | "imageTag">) {
+  const upstream = upstreamFor(project, deployment);
+  if (!upstream) throw new Error("deployment has nothing to route to");
   const plan = await planRoute(project);
-  await setRoute(project.slug, plan.serve, `${containerName}:${project.port}`, plan.redirect);
-  return plan;
+  await setRoute(project.slug, plan.serve, upstream, plan.redirect);
+  return { ...plan, upstream };
 }

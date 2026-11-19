@@ -49,6 +49,15 @@ async function Settings({ params }: { params: Props["params"] }) {
                   </Select>
                 </Field>
               </div>
+              <fieldset className="m-0 flex flex-col gap-3 border-0 border-t border-border p-0 pt-4">
+                <legend className="float-left mb-1 text-[13px] text-muted">
+                  Static sites only. Leave blank to detect from <span className="font-mono">package.json</span>; port and health path aren&apos;t used.
+                </legend>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Build command"><Input name="buildCommand" mono defaultValue={p.buildCommand ?? ""} placeholder="npm run build" autoComplete="off" /></Field>
+                  <Field label="Output directory"><Input name="outputDir" mono defaultValue={p.outputDir ?? ""} placeholder="dist" autoComplete="off" /></Field>
+                </div>
+              </fieldset>
               <SubmitButton pendingLabel="Saving…" variant="primary" className="self-start">Save settings</SubmitButton>
             </>
         </ActionForm>
@@ -71,10 +80,18 @@ async function Settings({ params }: { params: Props["params"] }) {
       <Panel className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
           <h2 className="m-0 text-[15px] font-semibold">{p.state === "standby" ? "On standby" : "Standby"}</h2>
-          <p className="mt-1 mb-0 text-muted">{p.state === "standby" ? "The container is stopped. Start it to serve traffic again." : "Stop the container to free memory. Domains, env and images are kept."}</p>
+          <p className="mt-1 mb-0 text-muted">
+            {p.buildMode === "static"
+              ? p.state === "standby"
+                ? "The site is offline. Start it to serve it again."
+                : "Take the site offline. Domains, env and published files are kept."
+              : p.state === "standby"
+                ? "The container is stopped. Start it to serve traffic again."
+                : "Stop the container to free memory. Domains, env and images are kept."}
+          </p>
         </div>
         <form action={setStandby.bind(null, p.slug, p.state !== "standby")}>
-          <Button type="submit">{p.state === "standby" ? "Start app" : "Put on standby"}</Button>
+          <Button type="submit">{p.state === "standby" ? (p.buildMode === "static" ? "Bring online" : "Start app") : "Put on standby"}</Button>
         </form>
       </Panel>
 

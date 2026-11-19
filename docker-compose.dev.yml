@@ -29,7 +29,7 @@ services:
     ports:
       - "127.0.0.1:8080:80"
       - "127.0.0.1:2019:2019"
-    volumes: [caddydata:/data, caddyconfig:/config, ./docker/caddy/dev.json:/etc/caddy/dev.json:ro]
+    volumes: [caddydata:/data, caddyconfig:/config, ./docker/caddy/dev.json:/etc/caddy/dev.json:ro, sites:/srv/sites:ro]
     networks: [default, unstakd]
 
   # Builder for Railpack (repos without a Dockerfile)
@@ -48,4 +48,7 @@ volumes:
   pgdata:
   caddydata:
   caddyconfig:
+  # Static sites; the worker writes them through a helper container.
+  sites:
+    name: unstakd-sites
   buildkit:

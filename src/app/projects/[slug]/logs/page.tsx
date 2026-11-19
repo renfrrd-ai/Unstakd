@@ -24,6 +24,8 @@ async function Logs({ params }: { params: Props["params"] }) {
       <SectionHeader title="Logs" description="Live output from the running container, kept for 24 hours." />
       {!p.live ? (
         <EmptyState title="Nothing running yet">Logs appear once a deploy goes live.</EmptyState>
+      ) : !p.live.containerName ? (
+        <EmptyState title="Static site">Caddy serves the files directly, so there&apos;s no process to log. Build output is on each deploy&apos;s page.</EmptyState>
       ) : p.state === "standby" ? (
         <EmptyState title="On standby">Start the app from Settings to see live logs.</EmptyState>
       ) : (

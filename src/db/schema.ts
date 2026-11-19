@@ -48,6 +48,9 @@ export const projects = pgTable("projects", {
   installationId: bigint("installation_id", { mode: "number" }),
   buildMode: buildMode("build_mode").notNull().default("railpack"),
   framework: text("framework"),
+  // Static mode only: null means detect from package.json.
+  buildCommand: text("build_command"),
+  outputDir: text("output_dir"),
   port: integer("port").notNull().default(3000),
   healthPath: text("health_path").notNull().default("/"),
   cpuLimit: real("cpu_limit").notNull().default(1),

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
@@ -13,8 +13,9 @@ import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { readLog } from "@/lib/logs";
 import { buildDockerfile, buildRailpack, detect } from "@/server/builder";
-import { caddyEnabled, previewRouteId, setRoute } from "@/server/caddy";
-import { applyRoute } from "@/server/routing";
+import { caddyEnabled, previewRouteId, setRoute, type Upstream } from "@/server/caddy";
+import { applyRoute, describeUpstream, upstreamFor } from "@/server/routing";
+import { buildStatic, checkSite, isSiteRef, siteExists, siteKey, staticPlan } from "@/server/static-site";
 import { connectionUrl } from "@/server/db-connection";
 import { containerState, docker, ensureNetwork, imageExists, LABEL, NETWORK, removeContainer, securityOpts } from "@/server/docker";
 import { cloneRepo } from "@/server/git";
@@ -75,72 +76,64 @@ export async function runDeploy(deploymentId: string) {
     await save();
   };
 
-  const workdir = await mkdtemp(path.join(os.tmpdir(), "unstakd-build-"));
-  const pr = d.previewPr;
-  const containerName = appContainerName(project.slug, d.number, pr);
-  let imageTag = d.imageTag;
+  // Static mode: build in a throwaway container and publish the output to the sites volume.
+  const buildSite = async (src: string) => {
+    const ref = await step("build", async () => {
+      const pkg = await readFile(path.join(src, "package.json"), "utf8").then(JSON.parse, () => null);
+      const plan = staticPlan(project, src, pkg);
+      log.step(`build  static site${project.framework ? ` · ${project.framework}` : ""} → ${plan.outputDir}/`);
+      const env = await containerEnv(project);
+      const site = await buildStatic(src, { slug: project.slug, key: siteKey(d.number, pr), plan, env, cpu: project.cpuLimit, memoryMb: project.memoryMb }, log.info, abort.signal);
+      log.info(`published ${site}`);
+      return site;
+    });
+    await skip("push", "static");
+    return ref;
+  };
 
-  try {
-    // 1–3: get an image, either by building or by reusing a previous deploy's (rollback).
-    if (d.rollbackOf && imageTag && (await imageExists(imageTag))) {
-      log.step(`rollback  reusing image ${imageTag}, no rebuild`);
-      await skip("clone", "rollback");
-      await skip("build", "rollback");
-      await skip("push", "rollback");
-    } else {
-      const src = path.join(workdir, "src");
-      const commit = await step("clone", async () => {
-        log.step(`clone  github.com/${project.repo} @ ${pr ? `pull request #${pr}` : project.branch}`);
-        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, pr, onLine: log.info });
-        log.info(`checked out ${c.sha.slice(0, 7)} ${c.message}`);
-        return c;
-      });
-      await save({ commitSha: commit.sha, commitMessage: d.trigger === "manual" || !d.commitMessage ? commit.message : d.commitMessage });
-
-      imageTag = imageTagFor(project.slug, commit.sha, d.number);
-      const tag = imageTag;
-      await step("build", async () => {
-        const found = await detect(src);
-        const mode = found.mode === "dockerfile" || project.buildMode === "dockerfile" ? "dockerfile" : "railpack";
-        if (found.framework && found.framework !== project.framework) {
-          await db().update(s.projects).set({ framework: found.framework }).where(eq(s.projects.id, project.id));
+  const buildImage = async (src: string, tag: string) => {
+    await step("build", async () => {
+      const found = await detect(src);
+      const mode = found.mode === "dockerfile" || project.buildMode === "dockerfile" ? "dockerfile" : "railpack";
+      if (found.framework && found.framework !== project.framework) {
+        await db().update(s.projects).set({ framework: found.framework }).where(eq(s.projects.id, project.id));
+      }
+      log.step(`build  ${mode}${found.framework ? ` · ${found.framework}` : ""}`);
+      if (mode === "dockerfile") await buildDockerfile(src, tag, log.info, abort.signal);
+      else await buildRailpack(src, tag, log.info, abort.signal, await containerEnv(project));
+      log.info(`built ${tag}`);
+    });
+    await step(
+      "push",
+      async () => {
+        const registry = process.env.REGISTRY;
+        if (!registry) {
+          log.step("push  kept in the local image store (no registry configured)");
+          return "local";
         }
-        log.step(`build  ${mode}${found.framework ? ` · ${found.framework}` : ""}`);
-        if (mode === "dockerfile") await buildDockerfile(src, tag, log.info, abort.signal);
-        else await buildRailpack(src, tag, log.info, abort.signal, await containerEnv(project));
-        log.info(`built ${tag}`);
-      });
-      await step(
-        "push",
-        async () => {
-          const registry = process.env.REGISTRY;
-          if (!registry) {
-            log.step("push  kept in the local image store (no registry configured)");
-            return "local";
-          }
-          const remote = `${registry}/${tag.replace(/^unstakd\//, "")}`;
-          log.step(`push  ${remote}`);
-          const [repo, version] = remote.split(/:(?=[^:]+$)/);
-          await docker().getImage(tag).tag({ repo, tag: version });
-          const stream = await docker().getImage(remote).push({});
-          await new Promise<void>((res, rej) => docker().modem.followProgress(stream, (err) => (err ? rej(err) : res())));
-          return "registry";
-        },
-        (where) => (where === "local" ? "local" : undefined),
-      );
-      await save({ imageTag: tag });
-    }
-    await save({ status: "deploying", imageTag, containerName });
+        const remote = `${registry}/${tag.replace(/^unstakd\//, "")}`;
+        log.step(`push  ${remote}`);
+        const [repo, version] = remote.split(/:(?=[^:]+$)/);
+        await docker().getImage(tag).tag({ repo, tag: version });
+        const stream = await docker().getImage(remote).push({});
+        await new Promise<void>((res, rej) => docker().modem.followProgress(stream, (err) => (err ? rej(err) : res())));
+        return "registry";
+      },
+      (where) => (where === "local" ? "local" : undefined),
+    );
+    return tag;
+  };
 
-    // 4: start the new container next to the live one.
+  // 4–5: start the new container next to the live one, then wait for it to answer.
+  const startApp = async (name: string, image: string): Promise<Upstream> => {
     const ip = await step("start", async () => {
-      log.step(`start  ${containerName} on ${NETWORK()}, port ${project.port}`);
+      log.step(`start  ${name} on ${NETWORK()}, port ${project.port}`);
       await waitForLinkedDatabases(project.id, log);
       await ensureNetwork();
-      await removeContainer(containerName);
+      await removeContainer(name);
       const container = await docker().createContainer({
-        name: containerName,
-        Image: imageTag!,
+        name,
+        Image: image,
         Env: await containerEnv(project),
         Labels: {
           [`${LABEL}.managed`]: "true",
@@ -164,13 +157,57 @@ export async function runDeploy(deploymentId: string) {
       return info.NetworkSettings.Networks[NETWORK()]?.IPAddress;
     });
     if (!ip) throw new Error("container has no address on the app network");
-
-    // 5: health check; container output goes into the deploy log meanwhile.
-    const stopTail = await tailContainer(containerName, log.info);
+    // Container output goes into the deploy log while we wait.
+    const stopTail = await tailContainer(name, log.info);
     try {
-      await step("health", () => healthCheck(containerName, `http://${ip}:${project.port}${project.healthPath}`, log, abort.signal));
+      await step("health", () => healthCheck(name, `http://${ip}:${project.port}${project.healthPath}`, log, abort.signal));
     } finally {
       stopTail();
+    }
+    return { dial: `${name}:${project.port}` };
+  };
+
+  const workdir = await mkdtemp(path.join(os.tmpdir(), "unstakd-build-"));
+  const pr = d.previewPr;
+  let imageTag = d.imageTag;
+  // Static sites have no container: their "image" is a directory of files Caddy serves.
+  const isStatic = d.rollbackOf ? isSiteRef(imageTag) : project.buildMode === "static";
+  const containerName = isStatic ? null : appContainerName(project.slug, d.number, pr);
+
+  try {
+    // 1–3: get an image (or site files), either by building or by reusing a previous deploy's (rollback).
+    const reusable = !!d.rollbackOf && !!imageTag && (isStatic ? await siteExists(imageTag) : await imageExists(imageTag));
+    if (reusable) {
+      log.step(`rollback  reusing ${isStatic ? "site files" : "image"} ${imageTag}, no rebuild`);
+      await skip("clone", "rollback");
+      await skip("build", "rollback");
+      await skip("push", "rollback");
+    } else {
+      const src = path.join(workdir, "src");
+      const commit = await step("clone", async () => {
+        log.step(`clone  github.com/${project.repo} @ ${pr ? `pull request #${pr}` : project.branch}`);
+        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, pr, onLine: log.info });
+        log.info(`checked out ${c.sha.slice(0, 7)} ${c.message}`);
+        return c;
+      });
+      await save({ commitSha: commit.sha, commitMessage: d.trigger === "manual" || !d.commitMessage ? commit.message : d.commitMessage });
+      imageTag = isStatic ? await buildSite(src) : await buildImage(src, imageTagFor(project.slug, commit.sha, d.number));
+      await save({ imageTag });
+    }
+    await save({ status: "deploying", imageTag, containerName });
+
+    let upstream: Upstream;
+    if (isStatic) {
+      // 4–5: nothing to start; check the published files instead.
+      await skip("start", "static");
+      await step("health", async () => {
+        log.step("health  checking the published files");
+        const size = await checkSite(imageTag!);
+        log.info(`health  index.html found, ${size} total`);
+      });
+      upstream = upstreamFor(project, { containerName: null, imageTag })!;
+    } else {
+      upstream = await startApp(containerName!, imageTag!);
     }
 
     // 6: point the proxy at the new container, then retire the old one after a grace period.
@@ -185,17 +222,17 @@ export async function runDeploy(deploymentId: string) {
         : [];
     await step("switch", async () => {
       if (!caddyEnabled()) {
-        log.warn("switch  no proxy configured (CADDY_ADMIN_URL unset); container is running but not routed");
+        log.warn(`switch  no proxy configured (CADDY_ADMIN_URL unset); ${isStatic ? "files are published" : "container is running"} but not routed`);
         return;
       }
       if (pr) {
         const host = previewHost(project.slug, pr, env().APPS_DOMAIN);
-        await setRoute(project.slug, [host], `${containerName}:${project.port}`, null, previewRouteId(project.slug, pr));
-        log.step(`switch  preview route → ${containerName}:${project.port} for ${host}`);
+        await setRoute(project.slug, [host], upstream, null, previewRouteId(project.slug, pr));
+        log.step(`switch  preview route → ${describeUpstream(upstream)} for ${host}`);
         return;
       }
-      const plan = await applyRoute(project, containerName);
-      log.step(`switch  caddy route → ${containerName}:${project.port} for ${plan.serve.join(", ")}`);
+      const plan = await applyRoute(project, { containerName, imageTag });
+      log.step(`switch  caddy route → ${describeUpstream(plan.upstream)} for ${plan.serve.join(", ")}`);
       if (plan.redirect) log.info(`${plan.redirect.from.join(", ")} redirects to ${plan.redirect.to}`);
     });
 
@@ -221,7 +258,7 @@ export async function runDeploy(deploymentId: string) {
     for (const st of steps) if (st.status === "pending") st.status = "skipped";
     log.err(cancelled ? "deploy cancelled" : (e as Error).message);
     log.info(pr ? "the previous preview (if any) keeps serving" : project.liveDeploymentId ? "traffic stays on the previous deploy" : "nothing was live before this deploy");
-    await removeContainer(containerName).catch(() => {});
+    if (containerName) await removeContainer(containerName).catch(() => {});
     await save({ status: cancelled ? "cancelled" : "failed", finishedAt: new Date(), error: cancelled ? null : (e as Error).message.slice(0, 500) });
     if (!cancelled) {
       const failedStep = steps.find((x) => x.status === "failed")?.name;
