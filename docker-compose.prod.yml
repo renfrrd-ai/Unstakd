@@ -1,0 +1,102 @@
+# Production stack for one VPS. Run from /opt/unstakd with a filled-in .env:
+#   docker compose -f docker-compose.prod.yml up -d --build
+name: unstakd
+
+x-app-env: &app-env
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://unstakd:${PLATFORM_DB_PASSWORD}@postgres:5432/unstakd
+    REDIS_URL: redis://:${PLATFORM_REDIS_PASSWORD}@redis:6379
+    UNSTAKD_KEY_FILE: /run/secrets/master.key
+    CADDY_ADMIN_URL: http://caddy:2019
+    CADDY_ASK_URL: http://app:3000/api/internal/domain-allowed
+    LOG_DIR: /var/lib/unstakd/logs
+    BACKUP_DIR: /var/lib/unstakd/backups
+    BUILDKIT_HOST: tcp://buildkit:1234
+    PLATFORM_DB_CONTAINER: unstakd-postgres-1
+    NODE_ENV: production
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: unstakd
+      POSTGRES_PASSWORD: ${PLATFORM_DB_PASSWORD}
+      POSTGRES_DB: unstakd
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U unstakd"], interval: 5s, retries: 20 }
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${PLATFORM_REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck: { test: ["CMD-SHELL", "REDISCLI_AUTH=$$PLATFORM_REDIS_PASSWORD redis-cli ping"], interval: 5s, retries: 20 }
+    environment: { PLATFORM_REDIS_PASSWORD: "${PLATFORM_REDIS_PASSWORD}" }
+
+  caddy:
+    build: ./docker/caddy
+    restart: unless-stopped
+    command: ["caddy", "run", "--config", "/etc/caddy/prod.json", "--resume"]
+    ports: ["80:80", "443:443"]
+    environment:
+      CF_API_TOKEN: ${CF_API_TOKEN}
+    volumes:
+      - caddydata:/data
+      - caddyconfig:/config
+      - ./docker/caddy/prod.json:/etc/caddy/prod.json:ro
+    networks: [default, unstakd]
+
+  buildkit:
+    image: moby/buildkit:v0.23.2
+    restart: unless-stopped
+    privileged: true
+    command: ["--addr", "tcp://0.0.0.0:1234"]
+    volumes: [buildkit:/var/lib/buildkit]
+
+  migrate:
+    build: .
+    <<: *app-env
+    command: ["node_modules/.bin/tsx", "src/db/migrate.ts"]
+    volumes: ["/var/lib/unstakd/master.key:/run/secrets/master.key:ro"]
+    depends_on: { postgres: { condition: service_healthy } }
+    restart: "no"
+
+  app:
+    build: .
+    <<: *app-env
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/unstakd:/var/lib/unstakd
+      - /var/lib/unstakd/master.key:/run/secrets/master.key:ro
+    networks: [default, unstakd]
+
+  worker:
+    build: .
+    <<: *app-env
+    restart: unless-stopped
+    command: ["node_modules/.bin/tsx", "src/worker/index.ts"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/unstakd:/var/lib/unstakd
+      - /var/lib/unstakd/master.key:/run/secrets/master.key:ro
+    networks: [default, unstakd]
+
+networks:
+  unstakd:
+    name: unstakd
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
+  caddyconfig:
+  buildkit:

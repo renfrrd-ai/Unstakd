@@ -3,7 +3,7 @@ import type { Job } from "bullmq";
 import { db, schema as s } from "@/db";
 import type { OpsJob } from "@/lib/queue";
 import { audit } from "@/server/audit";
-import { backupDatabase, pruneBackups, restoreDatabase } from "@/server/backups";
+import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
 import { removeRoute, setRoute } from "@/server/caddy";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
 import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
@@ -36,6 +36,15 @@ export async function handleOps(job: Job<OpsJob>) {
         } catch (e) {
           failed.push(row.name);
           await audit("backup.failed", row.name, { error: (e as Error).message.slice(0, 200) });
+        }
+      }
+      if (!data.databaseId) {
+        try {
+          const platform = await backupPlatform();
+          if (platform) log(`platform database: ${platform.size} bytes → ${platform.key}`);
+        } catch (e) {
+          failed.push("platform");
+          await audit("backup.failed", "platform database", { error: (e as Error).message.slice(0, 200) });
         }
       }
       const pruned = await pruneBackups(data.databaseId);

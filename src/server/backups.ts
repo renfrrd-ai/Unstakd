@@ -96,3 +96,22 @@ export async function pruneBackups(databaseId?: string) {
   }
   return old.length;
 }
+
+// The platform's own Postgres (projects, deployments, encrypted secrets). Runs in the compose stack,
+// found by container name; its dumps go to the same store under platform/.
+export async function backupPlatform(): Promise<{ key: string; size: number } | null> {
+  const container = process.env.PLATFORM_DB_CONTAINER;
+  if (!container) return null;
+  const url = new URL(process.env.DATABASE_URL ?? "");
+  const store = backupStore();
+  const key = `platform/${new Date().toISOString().replace(/[:.]/g, "-")}.dump`;
+  const { stdout, done } = await execStream(container, ["pg_dump", "-Fc", "-U", decodeURIComponent(url.username), "-d", url.pathname.slice(1)], {
+    env: [`PGPASSWORD=${decodeURIComponent(url.password)}`],
+  });
+  const [size, result] = await Promise.all([store.put(key, stdout), done]);
+  if (result.exitCode !== 0) {
+    await store.delete(key).catch(() => {});
+    throw new Error(result.stderr.trim() || `platform pg_dump exited with ${result.exitCode}`);
+  }
+  return { key, size };
+}

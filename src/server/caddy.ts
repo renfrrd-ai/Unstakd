@@ -18,11 +18,23 @@ async function api(method: string, path: string, body?: unknown) {
 
 function baseConfig() {
   const https = process.env.CADDY_HTTPS === "true";
+  const apps = process.env.APPS_DOMAIN ?? "localhost";
+  const wildcard = https && !!process.env.CF_API_TOKEN;
+  const routes: unknown[] = [];
+  if (process.env.DASHBOARD_HOST) {
+    routes.push({
+      "@id": "dashboard",
+      match: [{ host: [process.env.DASHBOARD_HOST] }],
+      handle: [{ handler: "reverse_proxy", upstreams: [{ dial: process.env.DASHBOARD_UPSTREAM ?? "app:3000" }] }],
+      terminal: true,
+    });
+  }
   const server: Record<string, unknown> = {
     listen: https ? [":443", ":80"] : [":80"],
-    routes: [],
+    routes,
   };
   if (!https) server.automatic_https = { disable: true };
+  else if (wildcard) server.automatic_https = { prefer_wildcard: true };
   const config: Record<string, unknown> = {
     // Keep our own access: Caddy checks the Host header against `origins` on non-loopback listeners.
     admin: {
@@ -31,9 +43,23 @@ function baseConfig() {
     },
     apps: { http: { servers: { [SERVER]: server } } },
   };
-  if (https && process.env.CADDY_ASK_URL) {
+  if (https) {
+    const policies: unknown[] = [];
+    // One wildcard cert (DNS challenge via Cloudflare) covers every <app>.<apps domain>.
+    if (wildcard) {
+      policies.push({
+        subjects: [`*.${apps}`],
+        issuers: [{ module: "acme", challenges: { dns: { provider: { name: "cloudflare", api_token: "{env.CF_API_TOKEN}" } } } }],
+      });
+    }
+    // Custom domains get certificates on first visit, but only if the ask endpoint approves them.
+    if (process.env.CADDY_ASK_URL) policies.push({ on_demand: true });
     (config.apps as Record<string, unknown>).tls = {
-      automation: { on_demand: { permission: { module: "http", endpoint: process.env.CADDY_ASK_URL } }, policies: [{ on_demand: true }] },
+      ...(wildcard ? { certificates: { automate: [`*.${apps}`] } } : {}),
+      automation: {
+        ...(process.env.CADDY_ASK_URL ? { on_demand: { permission: { module: "http", endpoint: process.env.CADDY_ASK_URL } } } : {}),
+        policies,
+      },
     };
   }
   return config;

@@ -135,7 +135,7 @@ async function main() {
 
     const [pg] = await tx
       .insert(s.databases)
-      .values({ name: "twoday-pg", engine: "postgres", version: "18", status: "running", containerName: "db-twoday-pg", volumeName: "db-twoday-pg", credentialsEnc: encrypt(JSON.stringify({ user: "app", password: "dev", database: "app" })) })
+      .values({ name: "twoday-pg", engine: "postgres", version: "18", status: "stopped", containerName: "db-twoday-pg", volumeName: "db-twoday-pg", credentialsEnc: encrypt(JSON.stringify({ user: "app", password: "dev", database: "app" })) })
       .returning();
     await tx.insert(s.databaseLinks).values({ databaseId: pg.id, projectId: twoday!.id, envKey: "DATABASE_URL" });
     await tx.insert(s.backups).values({ databaseId: pg.id, objectKey: "backups/twoday-pg/latest.sql.gz", sizeBytes: 4_200_000, status: "done", createdAt: ago(600) });
