@@ -13,6 +13,9 @@ more commits and leaves the app runnable. Check items off as they land.
   small modules in `src/server/`; the dashboard never touches the Docker socket directly.
 - **Logs**: the worker appends build/runtime lines to a log file per deployment and
   publishes them on Redis; the dashboard streams them with Server-Sent Events.
+- **Auth without Auth.js**: one allowlisted user needs only the OAuth code exchange and a
+  sealed cookie; this avoids a dependency on Next 16 compatibility. GitHub *App* tokens
+  (for cloning) are separate and come in step 6.
 - **Secrets**: AES-256-GCM, master key read from a file (`UNSTAKD_KEY_FILE`), never the DB.
 - **Theme**: CSS variables + Tailwind, cookie-persisted choice, dark by default. See
   [DESIGN.md](DESIGN.md).
@@ -39,8 +42,10 @@ more commits and leaves the app runnable. Check items off as they land.
 - [x] `crypto.ts` (AES-256-GCM) with tests.
 
 ### 3 · Auth
-- [ ] Auth.js GitHub provider, allowlist via `ALLOWED_GITHUB_LOGINS`, middleware guarding
-  everything except `/login`, webhooks and internal endpoints.
+- [x] GitHub OAuth (hand-rolled, no Auth.js) + `iron-session` sealed cookie, allowlist via
+  `ALLOWED_GITHUB_LOGINS` re-checked on every request, `proxy.ts` guarding everything
+  except `/login`, auth, webhooks and internal endpoints. Dev-only sign-in when
+  `GITHUB_CLIENT_ID` is unset under `next dev`.
 
 ### 4 · Dashboard screens (on real data)
 - [ ] Overview: hero (apps up / needs attention), server stats, project list, activity.
