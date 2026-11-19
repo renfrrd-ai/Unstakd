@@ -82,12 +82,14 @@ export async function buildDockerfile(dir: string, tag: string, log: Log, signal
   });
 }
 
-export async function buildRailpack(dir: string, tag: string, log: Log, signal: AbortSignal) {
+// `buildEnv` = the project's variables as KEY=value, available during the build (e.g. NEXT_PUBLIC_*).
+export async function buildRailpack(dir: string, tag: string, log: Log, signal: AbortSignal, buildEnv: string[] = []) {
   if (!(await railpackAvailable())) {
     throw new Error("Railpack isn't installed on this server. Add a Dockerfile to the repo, or install railpack (the VPS setup script does).");
   }
   await new Promise<void>((resolve, reject) => {
-    const p = spawn("railpack", ["build", dir, "--name", tag], { signal, env: process.env });
+    const args = ["build", dir, "--name", tag, "--progress", "plain", ...buildEnv.flatMap((e) => ["--env", e])];
+    const p = spawn("railpack", args, { signal, env: process.env });
     p.stdout.on("data", (b: Buffer) => log(b.toString("utf8")));
     p.stderr.on("data", (b: Buffer) => log(b.toString("utf8")));
     p.on("error", reject);

@@ -38,8 +38,8 @@ Create a bucket and an API token with Object Read & Write, then set `R2_ENDPOINT
 ## 5. Check on the first production run
 These couldn't be exercised on the laptop:
 - **HTTPS**: wildcard cert via Cloudflare DNS, and on-demand certs for a custom domain.
-- **Railpack builds** through the BuildKit container (laptop tests used Dockerfile builds).
-  If the installer URL in the Dockerfile has moved, install Railpack manually.
+- **Railpack builds** inside the worker container through the BuildKit service (verified on the
+  laptop with the CLI + a BuildKit container; the image pins Railpack 0.43.0 by checksum).
 - **`no-new-privileges`**: this laptop's Docker (snap, AppArmor, kernel 7.0) rejects it, so
   `.env.local` sets `DOCKER_NO_NEW_PRIVILEGES=false`. Leave it unset (on) on the VPS unless
   every container exits with code 255.

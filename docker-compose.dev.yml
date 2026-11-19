@@ -32,6 +32,14 @@ services:
     volumes: [caddydata:/data, caddyconfig:/config, ./docker/caddy/dev.json:/etc/caddy/dev.json:ro]
     networks: [default, unstakd]
 
+  # Builder for Railpack (repos without a Dockerfile)
+  buildkit:
+    image: moby/buildkit:v0.23.2
+    privileged: true
+    command: ["--addr", "tcp://0.0.0.0:1234"]
+    ports: ["127.0.0.1:1234:1234"]
+    volumes: [buildkit:/var/lib/buildkit]
+
 networks:
   unstakd:
     external: true
@@ -40,3 +48,4 @@ volumes:
   pgdata:
   caddydata:
   caddyconfig:
+  buildkit:

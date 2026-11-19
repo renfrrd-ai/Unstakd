@@ -29,7 +29,7 @@ Dockerfile/Railpack builds · Caddy admin API · Cloudflare R2 (S3 API). Package
 
 ```bash
 cp .env.example .env.local && pnpm key:generate   # first run only
-pnpm dev:services   # Postgres (5434), Redis (6380), Caddy (apps on :8080, admin on :2019)
+pnpm dev:services   # Postgres (5434), Redis (6380), Caddy (apps :8080, admin :2019), BuildKit (:1234)
 pnpm db:generate    # after editing src/db/schema.ts (then commit the migration)
 pnpm db:migrate     # apply migrations;  pnpm db:seed resets rows to sample data
 pnpm dev            # dashboard on :3000
@@ -37,7 +37,9 @@ pnpm worker         # deploy/ops worker (restart it after changing worker or ser
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
-Deployed apps are reachable at `http://<slug>.localhost:8080` in dev.
+Deployed apps are reachable at `http://<slug>.localhost:8080` in dev. Repos without a Dockerfile
+build with Railpack: install the CLI on your PATH (`~/.local/bin/railpack`, release binary) and
+keep `BUILDKIT_HOST=tcp://127.0.0.1:1234` in `.env.local`.
 
 ## Rules
 

@@ -12,9 +12,14 @@ COPY . .
 RUN pnpm build
 
 FROM base AS runtime
-# git/tar for cloning and build contexts; docker-cli so the worker can talk to the host daemon if needed.
+# git/tar for cloning and build contexts; Railpack (pinned, checksum-verified) for repos without a Dockerfile.
+ARG RAILPACK_VERSION=0.43.0
+ARG RAILPACK_SHA256=248a8f60f36854aabed6124113631078a802de3461660855fc4de9c26065c1fb
 RUN apk add --no-cache git tar docker-cli tini \
- && wget -qO- https://railpack.com/install.sh | sh -s -- --bin-dir /usr/local/bin || echo "railpack install skipped"
+ && wget -qO /tmp/railpack.tgz "https://github.com/railwayapp/railpack/releases/download/v${RAILPACK_VERSION}/railpack-v${RAILPACK_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+ && echo "${RAILPACK_SHA256}  /tmp/railpack.tgz" | sha256sum -c - \
+ && tar -xzf /tmp/railpack.tgz -C /usr/local/bin railpack \
+ && rm /tmp/railpack.tgz
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/.next/standalone ./

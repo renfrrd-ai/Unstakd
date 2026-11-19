@@ -102,7 +102,8 @@ export async function runDeploy(deploymentId: string) {
           await db().update(s.projects).set({ framework: found.framework }).where(eq(s.projects.id, project.id));
         }
         log.step(`build  ${mode}${found.framework ? ` · ${found.framework}` : ""}`);
-        await (mode === "dockerfile" ? buildDockerfile : buildRailpack)(src, tag, log.info, abort.signal);
+        if (mode === "dockerfile") await buildDockerfile(src, tag, log.info, abort.signal);
+        else await buildRailpack(src, tag, log.info, abort.signal, await containerEnv(project));
         log.info(`built ${tag}`);
       });
       await step(
