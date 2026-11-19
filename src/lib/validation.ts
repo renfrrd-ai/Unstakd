@@ -5,6 +5,9 @@ export const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 export const REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 
 export const slugSchema = z.string().trim().toLowerCase().regex(SLUG, "Use 1–40 lowercase letters, numbers or dashes");
+// Subdomains of APPS_DOMAIN the platform itself uses; an app with one of these names would shadow it.
+export const RESERVED_SLUGS = ["dash", "edge", "www", "api", "admin", "mail", "status"];
+export const newSlugSchema = slugSchema.refine((v) => !RESERVED_SLUGS.includes(v), "That name is reserved for the platform (dash, edge, www, …); pick another");
 // Static mode: blank means auto-detect (stored as null).
 export const buildCommandSchema = z
   .string()

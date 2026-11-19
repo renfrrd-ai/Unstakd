@@ -8,7 +8,7 @@ import { encrypt } from "@/lib/crypto";
 import { defaultHost } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { queues } from "@/lib/queue";
-import { buildCommandSchema, outputDirSchema, parseDotEnv, REPO, SIZES, slugSchema, type FormState, type Size } from "@/lib/validation";
+import { buildCommandSchema, outputDirSchema, parseDotEnv, REPO, SIZES, newSlugSchema, type FormState, type Size } from "@/lib/validation";
 import { audit } from "@/server/audit";
 import { dbContainerName, dbVolumeName, ENGINES, newCredentials, nextLocalPort } from "@/server/database-catalog";
 import { createDeployment } from "@/server/deployments";
@@ -17,7 +17,7 @@ import { requireUser } from "@/server/session";
 const schema = z.object({
   repo: z.string().regex(REPO, "Invalid repository"),
   branch: z.string().trim().min(1).regex(/^[A-Za-z0-9._/-]+$/, "Invalid branch name"),
-  slug: slugSchema,
+  slug: newSlugSchema,
   port: z.coerce.number().int().min(1).max(65535),
   healthPath: z.string().trim().regex(/^\/\S*$/, "Health path must start with /"),
   size: z.enum(Object.keys(SIZES) as [Size, ...Size[]]),

@@ -85,3 +85,12 @@ describe("upstreamFor", () => {
     expect(siteRoot("site:a/pr3-9/out")).toBe("/srv/sites/a/pr3-9/out");
   });
 });
+
+describe("reserved names", () => {
+  it("keeps platform subdomains out of app names", async () => {
+    const { newSlugSchema } = await import("@/lib/validation");
+    expect(newSlugSchema.safeParse("dash").success).toBe(false);
+    expect(newSlugSchema.safeParse("Edge").success).toBe(false);
+    expect(newSlugSchema.safeParse("dashboard").success).toBe(true);
+  });
+});

@@ -10,7 +10,7 @@ import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { env } from "@/lib/env";
-import { slugSchema } from "@/lib/validation";
+import { newSlugSchema } from "@/lib/validation";
 import { inspectRepo, parseRepo } from "@/server/repo-inspect";
 import { requireUser } from "@/server/session";
 
@@ -106,7 +106,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
     );
   }
 
-  const suggested = slugSchema.safeParse(repo.split("/")[1].toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40));
+  const suggested = newSlugSchema.safeParse(repo.split("/")[1].toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40));
   return (
     <ConfigureForm
       repo={info.repo}
