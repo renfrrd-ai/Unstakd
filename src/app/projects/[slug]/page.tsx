@@ -6,7 +6,7 @@ import { DomainList } from "@/components/domains/domain-list";
 import { Panel, SectionHeader } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { Skeleton } from "@/components/ui/skeleton";
-import { defaultHost } from "@/lib/domains";
+import { defaultHost, publicUrl } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { shortSha, timeAgo } from "@/lib/format";
 import { healthPill } from "@/lib/status";
@@ -52,10 +52,10 @@ async function Summary({ params }: { params: Params }) {
       <div className="flex min-h-48 flex-[1_1_360px] flex-col justify-between gap-4 rounded-lg bg-panel-2 p-5">
         <div className="flex items-center gap-2 font-mono text-xs text-muted">
           <span className="size-2 rounded-full bg-err-border" /><span className="size-2 rounded-full bg-warn" /><span className="size-2 rounded-full bg-accent" />
-          <span className="ml-2 truncate">https://{p.primaryHost}</span>
+          <span className="ml-2 truncate">{publicUrl(p.primaryHost)}</span>
         </div>
         <div>
-          <p className="m-0 font-display text-3xl font-bold tracking-[-0.02em] break-all">{p.primaryHost}</p>
+          <a href={publicUrl(p.primaryHost)} target="_blank" rel="noreferrer" className="m-0 block font-display text-3xl font-bold tracking-[-0.02em] break-all text-text hover:underline">{p.primaryHost}</a>
           <p className="mt-2 mb-0 flex flex-wrap items-center gap-2 text-muted">
             <Pill tone={pill.tone}>{pill.label}</Pill>
             {p.live ? `serving #${p.live.number} since ${timeAgo(p.live.finishedAt)}` : "not serving yet"}

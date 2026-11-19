@@ -83,6 +83,7 @@ export const deployments = pgTable(
     rollbackOf: uuid("rollback_of"),
     steps: jsonb("steps").$type<DeployStep[]>().notNull().default(sql`'[]'::jsonb`),
     error: text("error"),
+    notified: text("notified"),
     createdAt: createdAt(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
@@ -178,3 +179,10 @@ export type Domain = typeof domains.$inferSelect;
 export type Database = typeof databases.$inferSelect;
 export type Backup = typeof backups.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
+
+// Small key/value store for platform settings (alert targets, etc.). Values are encrypted.
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  valueEnc: text("value_enc").notNull(),
+  updatedAt: updatedAt(),
+});

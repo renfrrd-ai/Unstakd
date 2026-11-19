@@ -10,6 +10,8 @@ import { env } from "@/lib/env";
 import { cancelKey, queues } from "@/lib/queue";
 import { createRedis, redis } from "@/lib/redis";
 import { audit } from "@/server/audit";
+import { notify } from "@/server/notify";
+import { readLog } from "@/lib/logs";
 import { buildDockerfile, buildRailpack, detect } from "@/server/builder";
 import { caddyEnabled, setRoute } from "@/server/caddy";
 import { connectionUrl } from "@/server/db-connection";
@@ -203,6 +205,16 @@ export async function runDeploy(deploymentId: string) {
     if (!cancelled) {
       const failedStep = steps.find((x) => x.status === "failed")?.name;
       await audit("deploy.failed", project.name, { number: d.number, step: failedStep });
+      await log.flush();
+      const tail = (await readLog(d.id)).slice(-40).map((l) => l.text);
+      const sent = await notify({
+        level: "error",
+        title: `✕ ${project.name} #${d.number} failed${failedStep ? ` at ${failedStep}` : ""}`,
+        body: `${(e as Error).message}\n${project.liveDeploymentId ? "The previous deploy is still serving." : "Nothing was live before this deploy."}`,
+        url: `${env().APP_URL}/projects/${project.slug}/deployments/${d.number}`,
+        logTail: tail,
+      });
+      if (sent.length) await db().update(s.deployments).set({ notified: `${sent.join(" and ")}, with the last ${tail.length} log lines` }).where(eq(s.deployments.id, d.id));
     }
   } finally {
     clearInterval(cancelPoll);

@@ -3,6 +3,7 @@ import type { Job } from "bullmq";
 import { db, schema as s } from "@/db";
 import type { OpsJob } from "@/lib/queue";
 import { audit } from "@/server/audit";
+import { notify } from "@/server/notify";
 import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
 import { removeRoute, setRoute } from "@/server/caddy";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
@@ -21,7 +22,10 @@ export async function handleOps(job: Job<OpsJob>) {
       if (!row) return;
       const ok = await provisionDatabase(row, log);
       await audit(ok ? "database.created" : "database.failed", row.name, { engine: `${row.engine} ${row.version}` });
-      if (!ok) throw new Error(`${row.name} did not become ready`);
+      if (!ok) {
+        await notify({ level: "error", title: `Database ${row.name} failed to start`, body: "Open Databases to retry setup." });
+        throw new Error(`${row.name} did not become ready`);
+      }
       return;
     }
     case "backup": {
@@ -52,7 +56,10 @@ export async function handleOps(job: Job<OpsJob>) {
         const target = data.databaseId ? rows[0].name : `${rows.length - failed.length} database${rows.length - failed.length === 1 ? "" : "s"}`;
         await audit("backup.completed", target, { destination: process.env.R2_BUCKET ? "R2" : "local disk", pruned });
       }
-      if (failed.length) throw new Error(`backup failed for ${failed.join(", ")}`);
+      if (failed.length) {
+        await notify({ level: "error", title: `Backup failed: ${failed.join(", ")}`, body: "The other databases were backed up. Check the worker log for the error." });
+        throw new Error(`backup failed for ${failed.join(", ")}`);
+      }
       return;
     }
     case "restore": {

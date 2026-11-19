@@ -82,9 +82,13 @@ async function Detail({ params }: { params: Props["params"] }) {
         <InfoCard title={d.status === "failed" ? "Error" : "Result"}>
           {d.error ?? (d.status === "live" || d.status === "superseded" ? "Deployed successfully." : running ? "In progress." : "—")}
         </InfoCard>
+        {d.status === "failed" && d.notified ? (
+          <InfoCard title="Notified">{d.notified}.</InfoCard>
+        ) : (
         <InfoCard title="Trigger">
           {d.trigger === "rollback" ? "Rollback (reused an existing image, no rebuild)" : d.trigger === "push" ? `Push to ${d.branch}` : d.trigger === "create" ? "First deploy" : "Manual redeploy"}
         </InfoCard>
+        )}
         <InfoCard title="Image">
           <span className="font-mono text-[13px] break-all">{d.imageTag ?? "not built yet"}</span>
         </InfoCard>

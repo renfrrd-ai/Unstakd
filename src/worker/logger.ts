@@ -30,6 +30,10 @@ export class DeployLogger {
   err = (t: string) => this.line("err", t);
   step = (t: string) => this.line("step", t);
 
+  async flush() {
+    await this.chain;
+  }
+
   async end() {
     await this.chain;
     await this.pub.publish(logChannel(this.deploymentId), JSON.stringify({ end: true } satisfies LogMessage));

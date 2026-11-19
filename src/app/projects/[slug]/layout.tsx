@@ -4,6 +4,7 @@ import { ProjectHeader } from "@/components/layout/project-header";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
+import { publicUrl } from "@/lib/domains";
 import { healthPill } from "@/lib/status";
 import { getProject } from "@/server/queries";
 import { redeploy } from "./actions";
@@ -33,7 +34,7 @@ async function Header({ params }: { params: LayoutProps<"/projects/[slug]">["par
       actions={
         <>
           {project.live && (
-            <a href={`https://${project.primaryHost}`} target="_blank" rel="noreferrer" className={buttonClass("secondary")}>
+            <a href={publicUrl(project.primaryHost)} target="_blank" rel="noreferrer" className={buttonClass("secondary")}>
               Visit site
             </a>
           )}

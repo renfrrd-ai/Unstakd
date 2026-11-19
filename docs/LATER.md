@@ -46,7 +46,11 @@ These couldn't be exercised on the laptop:
 - The worker reaches app containers by IP on the `unstakd` network for health checks; confirm
   that works from inside the worker container.
 
-## 6. Decisions from the PRD's open questions
+## 6. Alerts
+Server → Alerts takes a Discord webhook URL (channel → Integrations → Webhooks) or any URL
+that accepts a JSON POST. Email alerts need an SMTP provider (e.g. Resend, Postmark): not built.
+
+## 7. Decisions from the PRD's open questions
 - Public product later? (changes auth, isolation, billing)
 - Serve apps from a separate domain (like `pxxl.pro`) to keep app cookies off the dashboard's?
 - Is `unstakd` free on npm/GitHub (for the CLI)?

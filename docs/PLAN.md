@@ -56,7 +56,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 - [ ] www → apex redirects (N3)
 - [ ] SSH tunnel for database tools (B4)
 - [ ] CLI (A2)
-- [ ] Failed-deploy alerts by email/Discord (A3)
+- [x] Alerts to Discord / any webhook (A3); email waits on SMTP credentials
 
 ## Definition of done for each step
 - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass.

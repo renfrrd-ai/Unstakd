@@ -2,6 +2,7 @@ import { eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
+import { notify } from "@/server/notify";
 import { setRoute } from "@/server/caddy";
 import { checkDns } from "@/server/domain-check";
 import { routeHosts } from "./deploy";
@@ -47,7 +48,10 @@ export async function checkDomains(log: (l: string) => void = () => {}) {
       log(`${d.hostname}: ${d.status} → ${status} (${verdict})`);
       touched.add(d.projectId);
       if (status === "active" && https) await audit("domain.certificate", d.hostname, { issuer: "Let's Encrypt" });
-      if (status === "misconfigured") await audit("domain.misconfigured", d.hostname, { dns: verdict });
+      if (status === "misconfigured") {
+        await audit("domain.misconfigured", d.hostname, { dns: verdict });
+        await notify({ level: "warning", title: `${d.hostname} no longer points at this server`, body: verdict === "missing" ? "Its DNS record is missing." : "Its DNS points somewhere else (a proxied Cloudflare record does this)." });
+      }
     }
   }
   for (const projectId of touched) await syncProjectRoute(projectId).catch((e) => log(`route sync failed: ${(e as Error).message}`));
