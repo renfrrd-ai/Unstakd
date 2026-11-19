@@ -16,7 +16,8 @@
     "db:seed": "tsx --env-file-if-exists=.env.local src/db/seed.ts",
     "key:generate": "tsx --env-file-if-exists=.env.local scripts/generate-key.ts",
     "worker": "tsx --env-file-if-exists=.env.local src/worker/index.ts",
-    "worker:dev": "tsx watch --env-file-if-exists=.env.local src/worker/index.ts"
+    "worker:dev": "tsx watch --env-file-if-exists=.env.local src/worker/index.ts",
+    "check": "pnpm typecheck && pnpm lint --max-warnings 0 && pnpm test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1171.0",

@@ -37,7 +37,7 @@ export async function removeAlert(key: "alerts.discordWebhook" | "alerts.webhook
   refresh();
 }
 
-export async function sendTestAlert(_prev: FormState): Promise<FormState> {
+export async function sendTestAlert(): Promise<FormState> {
   await requireUser();
   const sent = await notify({ level: "info", title: "Test alert from Unstakd", body: "Failed deploys, failed backups and broken domains will show up here." });
   return sent.length ? { ok: `Sent to ${sent.join(" and ")}.` } : { error: "Nothing was sent. Save a target first, or check the URL." };

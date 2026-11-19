@@ -34,7 +34,7 @@ pnpm db:generate    # after editing src/db/schema.ts (then commit the migration)
 pnpm db:migrate     # apply migrations;  pnpm db:seed resets rows to sample data
 pnpm dev            # dashboard on :3000
 pnpm worker         # deploy/ops worker (restart it after changing worker or server code)
-pnpm typecheck && pnpm lint && pnpm test
+pnpm check          # typecheck + lint (no warnings) + tests; run before every commit
 ```
 
 Deployed apps are reachable at `http://<slug>.localhost:8080` in dev. Repos without a Dockerfile

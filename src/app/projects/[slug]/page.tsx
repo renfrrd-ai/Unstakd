@@ -92,8 +92,7 @@ async function Summary({ params }: { params: Params }) {
 async function Resources({ params }: { params: Params }) {
   const p = await loadProject(params);
   if (!p.live) return null;
-  const { rows, restarts } = await appMetrics(p.id);
-  const now = Date.now();
+  const { rows, restarts, now } = await appMetrics(p.id);
   const limit = p.memoryMb * 1024 * 1024;
   const latest = rows.at(-1);
   return (
