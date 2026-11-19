@@ -38,7 +38,9 @@ pnpm worker         # deploy/ops worker (restart it after changing worker or ser
 pnpm check          # typecheck + lint (no warnings) + tests; run before every commit
 ```
 
-Deployed apps are reachable at `http://<slug>.localhost:8080` in dev. Repos without a Dockerfile
+Deployed apps are reachable at `http://<slug>.localhost:8080` in dev. Static sites (build mode `static`) have no
+container: the worker builds them in a throwaway `node:22-alpine` container and copies the output into
+the `unstakd-sites` volume, which Caddy serves read-only from `/srv/sites/<slug>/<deploy>/`. Repos without a Dockerfile
 build with Railpack: install the CLI on your PATH (`~/.local/bin/railpack`, release binary) and
 keep `BUILDKIT_HOST=tcp://127.0.0.1:1234` in `.env.local`.
 

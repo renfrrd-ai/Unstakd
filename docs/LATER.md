@@ -64,5 +64,5 @@ package name (see below).
 
 ## Local dev leftovers
 The local database has test data from end-to-end runs: project `hello` (a live hello-world
-container), databases `e2e-pg` and `e2e-redis`. `pnpm db:seed` resets the database rows (it
+container), `getting-started` (Railpack), `vitesse` (a static Vite site), databases `e2e-pg` and `e2e-redis`. `pnpm db:seed` resets the database rows (it
 doesn't remove containers; delete those from the dashboard first).

@@ -51,7 +51,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 
 ### v1.1 (from the PRD)
 - [x] Preview deploys per pull request at pr-<n>-<app>, removed on close (D8)
-- [ ] Static-site mode (D9)
+- [x] Static-site mode (D9): built in a throwaway Node container, files served by Caddy from the `unstakd-sites` volume
 - [x] Runtime metrics: CPU and memory charts (24h) and crash restarts per app (R6)
 - [x] www ↔ apex redirects to the primary domain (N3)
 - [x] SSH tunnel access for database tools: loopback-only port + instructions (B4)
