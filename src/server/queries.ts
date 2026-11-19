@@ -19,7 +19,8 @@ function primaryHost(domains: Domain[], project: Project) {
   return (own.find((d) => d.isPrimary) ?? own[0])?.hostname ?? `${project.slug}`;
 }
 
-async function summarize(projects: Project[]): Promise<ProjectSummary[]> {
+// No auth check: callers (pages via requireUser, /api/v1 via token) authorise first.
+export async function summarize(projects: Project[]): Promise<ProjectSummary[]> {
   if (projects.length === 0) return [];
   const ids = projects.map((p) => p.id);
   const [latest, domains] = await Promise.all([

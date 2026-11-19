@@ -8,8 +8,11 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, Input } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
 import { getSetting } from "@/server/settings";
-import { removeAlert, saveAlerts, sendTestAlert } from "./actions";
-import { duration } from "@/lib/format";
+import { requireUser } from "@/server/session";
+import { createToken, removeAlert, revokeToken, saveAlerts, sendTestAlert } from "./actions";
+import { NewToken } from "@/components/server/new-token";
+import { db, schema as s } from "@/db";
+import { duration, timeAgo } from "@/lib/format";
 import { hostStats } from "@/server/host-stats";
 import { deployStats } from "@/server/queries";
 
@@ -23,6 +26,9 @@ export default function ServerPage() {
       </Suspense>
       <Suspense fallback={<Skeleton className="h-64" />}>
         <Alerts />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-48" />}>
+        <ApiTokens />
       </Suspense>
     </PageMain>
   );
@@ -89,6 +95,42 @@ async function Alerts() {
             <SubmitButton pendingLabel="Sending…" className="self-start">Send a test alert</SubmitButton>
           </ActionForm>
         )}
+      </Panel>
+    </section>
+  );
+}
+
+async function ApiTokens() {
+  await requireUser();
+  const tokens = await db().select().from(s.apiTokens).orderBy(s.apiTokens.createdAt);
+  return (
+    <section aria-labelledby="tokens-h" className="flex flex-col gap-3.5">
+      <div>
+        <h2 id="tokens-h" className="m-0 text-lg font-semibold">API tokens</h2>
+        <p className="mt-1 mb-0 text-muted">
+          For the <code className="font-mono text-soft">unstakd</code> CLI and scripts. A token can deploy, roll back and change env vars on every project.
+        </p>
+      </div>
+      <Panel className="flex flex-col gap-5 p-5">
+        {tokens.length > 0 ? (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {tokens.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="font-semibold">{t.name}</span>
+                  <span className="font-mono text-[13px] text-soft">{t.prefix}…</span>
+                  <span className="text-[13px] text-muted">{t.lastUsedAt ? `used ${timeAgo(t.lastUsedAt)}` : "never used"}</span>
+                </span>
+                <form action={revokeToken.bind(null, t.id)}>
+                  <ConfirmButton message={`Revoke “${t.name}”? Anything using it stops working.`} className="cursor-pointer text-[13px] text-err hover:underline">Revoke</ConfirmButton>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="m-0 text-muted">No tokens yet.</p>
+        )}
+        <NewToken action={createToken} />
       </Panel>
     </section>
   );

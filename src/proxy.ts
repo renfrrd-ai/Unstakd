@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readSession, SESSION_COOKIE } from "@/server/session";
 
 // Webhooks verify their own signatures; internal endpoints are only reachable from Caddy/localhost.
-const PUBLIC = [/^\/login$/, /^\/api\/auth\//, /^\/api\/webhooks\//, /^\/api\/internal\//];
+// /api/v1 authenticates with bearer tokens in each route.
+const PUBLIC = [/^\/api\/v1\//, /^\/login$/, /^\/api\/auth\//, /^\/api\/webhooks\//, /^\/api\/internal\//];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -209,3 +209,13 @@ export const appMetrics = pgTable(
   (t) => [index("app_metrics_project_at").on(t.projectId, t.at)],
 );
 export type AppMetric = typeof appMetrics.$inferSelect;
+
+// CLI/API tokens. Only a SHA-256 hash is stored; the token is shown once at creation.
+export const apiTokens = pgTable("api_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  prefix: text("prefix").notNull(),
+  createdAt: createdAt(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+});

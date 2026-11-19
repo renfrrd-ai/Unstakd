@@ -1,23 +1,12 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema as s } from "@/db";
-import { encrypt } from "@/lib/crypto";
 import { envKeySchema, parseDotEnv, type FormState } from "@/lib/validation";
 import { audit } from "@/server/audit";
+import { upsertEnv as upsert } from "@/server/env-vars";
 import { done, projectFor } from "@/server/project-action";
-
-async function upsert(projectId: string, entries: [string, string][], secret: boolean) {
-  if (entries.length === 0) return;
-  await db()
-    .insert(s.envVars)
-    .values(entries.map(([key, value]) => ({ projectId, key, valueEnc: encrypt(value), secret })))
-    .onConflictDoUpdate({
-      target: [s.envVars.projectId, s.envVars.key],
-      set: { valueEnc: sql`excluded.value_enc`, secret: sql`excluded.secret`, updatedAt: new Date() },
-    });
-}
 
 const one = z.object({ key: envKeySchema, value: z.string().max(32_768), secret: z.literal("on").optional() });
 
