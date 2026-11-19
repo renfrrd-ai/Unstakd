@@ -22,5 +22,21 @@ services:
       interval: 2s
       retries: 20
 
+  # Reverse proxy for deployed apps: http://<app>.localhost:8080
+  caddy:
+    image: caddy:2-alpine
+    command: ["caddy", "run", "--config", "/etc/caddy/dev.json", "--resume"]
+    ports:
+      - "127.0.0.1:8080:80"
+      - "127.0.0.1:2019:2019"
+    volumes: [caddydata:/data, caddyconfig:/config, ./docker/caddy/dev.json:/etc/caddy/dev.json:ro]
+    networks: [default, unstakd]
+
+networks:
+  unstakd:
+    external: true
+
 volumes:
   pgdata:
+  caddydata:
+  caddyconfig:

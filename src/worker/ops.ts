@@ -4,7 +4,10 @@ import { db, schema as s } from "@/db";
 import type { OpsJob } from "@/lib/queue";
 import { audit } from "@/server/audit";
 import { backupDatabase, pruneBackups, restoreDatabase } from "@/server/backups";
+import { removeRoute, setRoute } from "@/server/caddy";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
+import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
+import { routeHosts } from "./deploy";
 
 export async function handleOps(job: Job<OpsJob>) {
   const data = job.data;
@@ -53,6 +56,42 @@ export async function handleOps(job: Job<OpsJob>) {
     case "db-stats": {
       const rows = await db().select().from(s.databases).where(eq(s.databases.status, "running"));
       for (const row of rows) await recordUsage(row);
+      return;
+    }
+    case "stop-container": {
+      // Only stop it if it's no longer the live container of its project.
+      const live = await db().select({ id: s.deployments.id }).from(s.deployments).where(and(eq(s.deployments.containerName, data.containerName), eq(s.deployments.status, "live")));
+      if (live.length === 0) await removeContainer(data.containerName);
+      return;
+    }
+    case "standby":
+    case "start": {
+      const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
+      if (!project?.liveDeploymentId) return;
+      const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
+      if (!live?.containerName) return;
+      if (data.kind === "standby") {
+        await stopContainer(live.containerName);
+        await removeRoute(project.slug);
+      } else {
+        await startContainer(live.containerName);
+        await setRoute(project.slug, await routeHosts(project), `${live.containerName}:${project.port}`);
+      }
+      return;
+    }
+    case "domain-sync": {
+      const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
+      if (!project?.liveDeploymentId || project.state !== "active") return;
+      const [live] = await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId));
+      if (live?.containerName) await setRoute(project.slug, await routeHosts(project), `${live.containerName}:${project.port}`);
+      return;
+    }
+    case "teardown": {
+      await removeRoute(data.slug);
+      const containers = await docker().listContainers({ all: true, filters: { label: [`${LABEL}.project=${data.slug}`] } });
+      for (const c of containers) await removeContainer(c.Id);
+      const images = await docker().listImages({ filters: { reference: [`unstakd/${data.slug}`] } });
+      for (const img of images) await docker().getImage(img.Id).remove({ force: true }).catch(() => {});
       return;
     }
     case "destroy-db":

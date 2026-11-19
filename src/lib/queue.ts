@@ -10,6 +10,7 @@ export type OpsJob =
   | { kind: "backup"; databaseId?: string }
   | { kind: "prune" }
   | { kind: "db-stats" }
+  | { kind: "stop-container"; containerName: string }
   | { kind: "provision-db"; databaseId: string }
   | { kind: "restore"; backupId: string }
   | { kind: "standby"; projectId: string }

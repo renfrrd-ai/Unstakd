@@ -10,7 +10,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "dev:services": "docker compose -f docker-compose.dev.yml up -d --wait",
+    "dev:services": "docker network inspect unstakd >/dev/null 2>&1 || docker network create unstakd >/dev/null; docker compose -f docker-compose.dev.yml up -d --wait",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env.local src/db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local src/db/seed.ts",
