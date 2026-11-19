@@ -2,6 +2,7 @@ import "server-only";
 import { sealData, unsealData } from "iron-session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { env } from "@/lib/env";
 
 export const SESSION_COOKIE = "unstakd_session";
@@ -46,7 +47,10 @@ export async function readSession(seal: string | undefined): Promise<User | null
 }
 
 export async function getUser(): Promise<User | null> {
-  return readSession((await cookies()).get(SESSION_COOKIE)?.value);
+  const seal = (await cookies()).get(SESSION_COOKIE)?.value;
+  // Unsealing checks the TTL against the clock, which must happen at request time.
+  await connection();
+  return readSession(seal);
 }
 
 export async function requireUser(): Promise<User> {

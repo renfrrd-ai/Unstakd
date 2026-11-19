@@ -11,7 +11,7 @@ export function StatCard({ label, value, unit, percent, footnote }: { label: str
       </div>
       {percent !== undefined && (
         <div className="mt-2.5 h-1.5 rounded-sm bg-track" role="meter" aria-label={label} aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100}>
-          <div className="h-1.5 rounded-sm bg-accent" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+          <div className={percent > 85 ? "h-1.5 rounded-sm bg-warn" : "h-1.5 rounded-sm bg-accent"} style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
         </div>
       )}
       {footnote && <div className="mt-2.5 font-mono text-xs text-muted">{footnote}</div>}
