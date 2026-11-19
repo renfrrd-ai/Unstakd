@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Unstakd — Overview</title>
+<script src="695268b5-adcf-4a31-ab9b-1e80e04b0a56"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+</style>
+<style>
+body{margin:0}
+a{text-decoration:none}
+</style>
+</helmet>
+<div style="min-height: 1180px; background: {{t.bg}}; color: {{t.text}}; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="border-bottom: 1px solid {{t.border}}">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+      <div style="display: flex; align-items: center; gap: 28px; flex-wrap: wrap">
+        <span style="display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px"><span style="display: inline-block; width: 10px; height: 18px; background: {{t.accent}}"></span>unstakd</span>
+        <nav aria-label="Main" style="display: flex; gap: 4px; flex-wrap: wrap">
+          <a href="#" style="padding: 10px 12px; border-radius: 6px; background: {{t.panel2}}; color: {{t.text}}; font-weight: 600">Overview</a>
+          <a href="Project.dc.html" style="padding: 10px 12px; border-radius: 6px; color: {{t.muted}}">Projects</a>
+          <a href="#" style="padding: 10px 12px; border-radius: 6px; color: {{t.muted}}">Databases</a>
+          <a href="#" style="padding: 10px 12px; border-radius: 6px; color: {{t.muted}}">Domains</a>
+          <a href="#" style="padding: 10px 12px; border-radius: 6px; color: {{t.muted}}">Activity</a>
+        </nav>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}"><span style="color: {{t.accentText}}">●</span> vps-1 · toronto</span>
+        <button sc-camel-on-click="{{toggleTheme}}" aria-pressed="{{themePressed}}" aria-label="Switch to {{themeLabel}} mode" style="height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid {{t.borderStrong}}; border-radius: 999px; background: {{t.panel}}; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+          <span>{{themeLabel}}</span>
+        </button>
+        <span style="width: 32px; height: 32px; border-radius: 50%; background: {{t.panel2}}; color: {{t.text}}; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">RA</span>
+      </div>
+    </div>
+  </header>
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 28px">
+    <section style="display: flex; flex-wrap: wrap; align-items: stretch; justify-content: space-between; gap: 20px; padding: 28px; border-radius: 12px; background: {{t.panel}}; border: 1px solid {{t.border}}">
+      <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 18px">
+        <div>
+          <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">good evening, renfred</p>
+          <h1 style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 46px; line-height: 1.05; letter-spacing: -0.03em; font-weight: 700">5 apps up.<br><span style="color: {{t.err}}">1 needs you.</span></h1>
+        </div>
+        <a href="NewProject.dc.html" style="align-self: start; height: 44px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: 8px; background: {{t.accent}}; color: {{t.accentInk}}; font-weight: 700">+ New project</a>
+      </div>
+      <a href="Deploy.dc.html" style="flex: 0 1 380px; padding: 18px 20px; border-radius: 10px; background: {{t.errBg}}; border: 1px solid {{t.errBorder}}; color: {{t.text}}; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.err}}; font-weight: 700">✕ FAILED · clueline #22 · 2h ago</span>
+        <span style="line-height: 1.5">Health check timed out after the Prisma bump. <strong>#21 is still serving</strong>, so nothing is down.</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.soft}}">GET /api/health → no response in 30s</span>
+        <span style="color: {{t.err}}; font-weight: 600">Open logs →</span>
+      </a>
+    </section>
+    <section aria-label="Server" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+      <div style="padding: 18px; border-radius: 12px; border: 1px solid {{t.border}}; background: {{t.panel}}"><div style="font-size: 13px; color: {{t.muted}}">CPU</div><div style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 600; margin-top: 4px">41<span style="font-size: 18px; color: {{t.muted}}">%</span></div><div style="height: 6px; border-radius: 3px; background: {{t.track}}; margin-top: 10px"><div style="width: 41%; height: 6px; border-radius: 3px; background: {{t.accent}}"></div></div></div>
+      <div style="padding: 18px; border-radius: 12px; border: 1px solid {{t.border}}; background: {{t.panel}}"><div style="font-size: 13px; color: {{t.muted}}">Memory</div><div style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 600; margin-top: 4px">3.2<span style="font-size: 18px; color: {{t.muted}}"> / 8 GB</span></div><div style="height: 6px; border-radius: 3px; background: {{t.track}}; margin-top: 10px"><div style="width: 40%; height: 6px; border-radius: 3px; background: {{t.accent}}"></div></div></div>
+      <div style="padding: 18px; border-radius: 12px; border: 1px solid {{t.border}}; background: {{t.panel}}"><div style="font-size: 13px; color: {{t.muted}}">Disk</div><div style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 600; margin-top: 4px">38<span style="font-size: 18px; color: {{t.muted}}"> / 160 GB</span></div><div style="height: 6px; border-radius: 3px; background: {{t.track}}; margin-top: 10px"><div style="width: 24%; height: 6px; border-radius: 3px; background: {{t.accent}}"></div></div></div>
+      <div style="padding: 18px; border-radius: 12px; border: 1px solid {{t.border}}; background: {{t.panel}}"><div style="font-size: 13px; color: {{t.muted}}">Deploys this week</div><div style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 600; margin-top: 4px">23</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}; margin-top: 10px">median 1m 06s to live</div></div>
+    </section>
+    <section aria-labelledby="proj-h" style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px">
+        <div>
+          <h2 id="proj-h" style="margin: 0; font-size: 18px; font-weight: 600">Projects</h2>
+          <p style="margin: 4px 0 0; color: {{t.muted}}">6 apps · 4 live · 1 building · 1 on standby</p>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border: 1px solid {{t.border}}; border-radius: 8px; background: {{t.panel}}; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace; font-size: 13px">/<input aria-label="Search projects" placeholder="search projects" style="background: transparent; border: 0; outline: none; color: {{t.text}}; font: inherit; width: 200px"></label>
+      </div>
+      <div style="border: 1px solid {{t.border}}; border-radius: 12px; overflow: hidden; background: {{t.panel}}">
+        <a href="Project.dc.html" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>twoday</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">ourtwoday.com</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">collections: drag to reorder · now</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.warnBg}}; color: {{t.warn}}; font-size: 12px; font-weight: 600">Building 01:12</span></a>
+        <a href="Deploy.dc.html" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid {{t.border}}; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>clueline</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">clueline.dev</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">serving #21 · #22 failed 2h ago</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.errBg}}; color: {{t.err}}; font-size: 12px; font-weight: 600">Needs attention</span></a>
+        <a href="#" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid {{t.border}}; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>portfolio</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">renfred.dev</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">add /proofs induction visual · 12m ago</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.okBg}}; color: {{t.accentText}}; font-size: 12px; font-weight: 600">Live</span></a>
+        <a href="#" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid {{t.border}}; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>uofthub</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">uofthub.com</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">profile page skeletons · yesterday</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.okBg}}; color: {{t.accentText}}; font-size: 12px; font-weight: 600">Live</span></a>
+        <a href="#" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid {{t.border}}; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>trueluk-api</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">trueluk-api.unstakd.com</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">risk score v2 endpoint · 3d ago</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.okBg}}; color: {{t.accentText}}; font-size: 12px; font-weight: 600">Live</span></a>
+        <a href="#" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid {{t.border}}; color: {{t.text}}"><span style="display: flex; flex-direction: column; gap: 4px"><strong>nn-visualizer</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.accentText}}">nn.unstakd.com</span></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">pooling step animation · 1w ago</span><span style="padding: 3px 10px; border-radius: 999px; background: {{t.panel2}}; color: {{t.muted}}; font-size: 12px; font-weight: 600">Standby</span></a>
+      </div>
+    </section>
+    <section aria-labelledby="act-h" style="display: flex; flex-direction: column; gap: 14px">
+      <h2 id="act-h" style="margin: 0; font-size: 18px; font-weight: 600">Activity</h2>
+      <ol style="list-style: none; margin: 0; padding: 0; border: 1px solid {{t.border}}; border-radius: 12px; background: {{t.panel}}">
+        <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 14px 20px"><span>Backups finished for 3 databases</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.muted}}">sent to R2 · 3:00 AM</span></li>
+        <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 14px 20px; border-top: 1px solid {{t.border}}"><span>Certificate issued for ourtwoday.com</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.muted}}">let's encrypt · yesterday</span></li>
+        <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 14px 20px; border-top: 1px solid {{t.border}}"><span>nn-visualizer put on standby</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.muted}}">freed 180 MB · 2d ago</span></li>
+      </ol>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1180}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark !== undefined ? s.dark : (this.props.dark ?? true);
+    const t = dark
+      ? { bg: '#0B0D0C', panel: '#121614', panel2: '#1F2622', border: '#1F2622', borderStrong: '#2A332E', text: '#E6EDE9', soft: '#B7C2BC', muted: '#8A968F', dim: '#5E6A64', accent: '#3DDC84', accentText: '#3DDC84', accentInk: '#06150D', okBg: '#0F2218', warn: '#F5B83D', warnBg: '#211A0B', err: '#FF7A7A', errBg: '#211213', errBorder: '#5C2D33', logBg: '#070908', track: '#1F2622' }
+      : { bg: '#F6F7F6', panel: '#FFFFFF', panel2: '#E3E8E5', border: '#DCE2DE', borderStrong: '#C6CEC9', text: '#101412', soft: '#3A443F', muted: '#56615B', dim: '#6B7670', accent: '#157A42', accentText: '#157A42', accentInk: '#FFFFFF', okBg: '#E6F4EC', warn: '#9A5B00', warnBg: '#FFF6E5', err: '#B42318', errBg: '#FDEDEC', errBorder: '#F2B8B5', logBg: '#F1F4F2', track: '#E3E8E5' };
+    return {
+      t,
+      isDark: dark,
+      isLight: !dark,
+      themeLabel: dark ? 'Light' : 'Dark',
+      themePressed: dark ? 'false' : 'true',
+      toggleTheme: () => this.setState({ dark: !dark })
+    };
+  }
+}
+</script>
+</body></html>
+

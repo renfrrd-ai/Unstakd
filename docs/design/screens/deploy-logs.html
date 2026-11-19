@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Unstakd — clueline deploy #22</title>
+<script src="ef65447f-a724-4400-9397-5edeea40951c"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+</style>
+<style>
+body{margin:0}
+a{text-decoration:none}
+</style>
+</helmet>
+<div style="min-height: 940px; background: {{t.bg}}; color: {{t.text}}; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="border-bottom: 1px solid {{t.border}}">
+   <div style="max-width: 1200px; margin: 0 auto; padding: 14px 32px 0; display: flex; flex-direction: column; gap: 10px">
+   <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+    <div style="display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 14px; flex-wrap: wrap">
+      <span style="display: inline-block; width: 10px; height: 18px; background: {{t.accent}}"></span>
+      <a href="Main.dc.html" style="color: {{t.text}}; font-weight: 700; font-size: 16px">unstakd</a>
+      <span style="color: {{t.dim}}">/</span><a href="Project.dc.html" style="color: {{t.soft}}">clueline</a>
+      <span style="color: {{t.dim}}">/</span><span>deploy #22</span>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+      <button style="height: 44px; padding: 0 16px; border: 1px solid {{t.borderStrong}}; border-radius: 6px; background: transparent; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 14px">Redeploy</button>
+      <button style="height: 44px; padding: 0 16px; border: 0; border-radius: 6px; background: {{t.accent}}; color: {{t.accentInk}}; font-family: Inter, sans-serif; font-size: 14px; font-weight: 700">Copy error for Claude</button>
+      <button sc-camel-on-click="{{toggleTheme}}" aria-pressed="{{themePressed}}" aria-label="Switch to {{themeLabel}} mode" style="height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid {{t.borderStrong}}; border-radius: 999px; background: {{t.panel}}; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer">
+        <sc-if value="{{isDark}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{isLight}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+        <span>{{themeLabel}}</span>
+      </button>
+    </div>
+   </div>
+   <nav aria-label="Project" style="display: flex; flex-wrap: wrap; gap: 4px">
+     <a href="Project.dc.html" style="padding: 12px 14px; color: {{t.muted}}">Overview</a>
+     <a href="#" style="padding: 12px 14px; color: {{t.text}}; font-weight: 600; border-bottom: 2px solid {{t.accent}}">Deployments</a>
+     <a href="#" style="padding: 12px 14px; color: {{t.muted}}">Logs</a>
+     <a href="#" style="padding: 12px 14px; color: {{t.muted}}">Environment</a>
+     <a href="Project.dc.html" style="padding: 12px 14px; color: {{t.muted}}">Domains</a>
+     <a href="#" style="padding: 12px 14px; color: {{t.muted}}">Settings</a>
+   </nav>
+   </div>
+  </header>
+  <main style="max-width: 1200px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.err}}; font-weight: 700">✕ FAILED AT HEALTH CHECK · 2h ago</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 34px; letter-spacing: -0.02em; font-weight: 700">bump prisma</h1>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{t.muted}}"><span>main @ 0d1e5f3</span><span>railpack · node 22</span><span>build 01:48 · total 02:40</span></div>
+      </div>
+      <div style="flex: 0 1 360px; padding: 16px 18px; border-radius: 10px; background: {{t.panel}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.accentText}}; font-weight: 700">● STILL LIVE: #21</span>
+        <span style="line-height: 1.5">clueline.dev never went down. #22 was stopped and its image kept for debugging.</span>
+      </div>
+    </div>
+    <ol aria-label="Deploy steps" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; font-size: 13px">
+      <li style="padding: 12px; border-radius: 6px; background: {{t.panel}}; border-top: 3px solid {{t.accent}}"><div style="font-weight: 600">Clone</div><div style="font-family: 'JetBrains Mono', monospace; color: {{t.muted}}; font-size: 12px; margin-top: 4px">0.7s</div></li>
+      <li style="padding: 12px; border-radius: 6px; background: {{t.panel}}; border-top: 3px solid {{t.accent}}"><div style="font-weight: 600">Install</div><div style="font-family: 'JetBrains Mono', monospace; color: {{t.muted}}; font-size: 12px; margin-top: 4px">34s</div></li>
+      <li style="padding: 12px; border-radius: 6px; background: {{t.panel}}; border-top: 3px solid {{t.accent}}"><div style="font-weight: 600">Build</div><div style="font-family: 'JetBrains Mono', monospace; color: {{t.muted}}; font-size: 12px; margin-top: 4px">1m 12s</div></li>
+      <li style="padding: 12px; border-radius: 6px; background: {{t.panel}}; border-top: 3px solid {{t.accent}}"><div style="font-weight: 600">Push image</div><div style="font-family: 'JetBrains Mono', monospace; color: {{t.muted}}; font-size: 12px; margin-top: 4px">4s</div></li>
+      <li style="padding: 12px; border-radius: 6px; background: {{t.errBg}}; border-top: 3px solid {{t.err}}"><div style="font-weight: 600">Health check</div><div style="font-family: 'JetBrains Mono', monospace; color: {{t.err}}; font-size: 12px; margin-top: 4px">timed out 30s</div></li>
+      <li style="padding: 12px; border-radius: 6px; background: {{t.panel}}; border-top: 3px solid {{t.borderStrong}}; color: {{t.muted}}"><div style="font-weight: 600">Switch traffic</div><div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 4px">skipped</div></li>
+    </ol>
+    <section style="border: 1px solid {{t.border}}; border-radius: 8px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 14px; background: {{t.panel}}; border-bottom: 1px solid {{t.border}}">
+        <div style="display: flex; gap: 4px">
+          <button aria-pressed="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace; font-size: 12px">build</button>
+          <button aria-pressed="true" style="height: 36px; padding: 0 14px; border: 0; border-radius: 4px; background: {{t.panel2}}; color: {{t.text}}; font-family: 'JetBrains Mono', monospace; font-size: 12px">runtime</button>
+        </div>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.muted}}">container clueline-22 · exited</span>
+      </div>
+      <pre style="margin: 0; padding: 18px 20px; background: {{t.logBg}}; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.75; color: {{t.soft}}; overflow-x: auto; white-space: pre"><span style="color: {{t.dim}}">02:04.1</span>  starting container on clueline-net, port 3000
+<span style="color: {{t.dim}}">02:05.3</span>  ▲ Next.js 15 · ready on http://0.0.0.0:3000
+<span style="color: {{t.dim}}">02:06.0</span>  health  GET /api/health  waiting…
+<span style="color: {{t.dim}}">02:06.9</span>  <span style="color: {{t.warn}}">prisma:warn</span> query engine library not found for linux-musl-openssl-3.0.x
+<span style="color: {{t.dim}}">02:07.2</span>  <span style="color: {{t.err}}">Error: PrismaClientInitializationError</span>
+<span style="color: {{t.dim}}">02:07.2</span>      at /app/lib/db.ts:4:15
+<span style="color: {{t.dim}}">02:36.0</span>  health  <span style="color: {{t.err}}">no response in 30s · giving up</span>
+<span style="color: {{t.dim}}">02:36.1</span>  stopped clueline-22 · traffic stays on #21</pre>
+    </section>
+    <section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+      <div style="padding: 16px; border: 1px solid {{t.border}}; border-radius: 8px"><h2 style="margin: 0 0 6px; font-size: 13px; color: {{t.muted}}; font-weight: 500">Likely cause</h2><p style="margin: 0; line-height: 1.5">Prisma's binary target doesn't match the Alpine image. Add <code style="font-family: 'JetBrains Mono', monospace">binaryTargets</code> in schema.prisma.</p></div>
+      <div style="padding: 16px; border: 1px solid {{t.border}}; border-radius: 8px"><h2 style="margin: 0 0 6px; font-size: 13px; color: {{t.muted}}; font-weight: 500">Notified</h2><p style="margin: 0; line-height: 1.5">Discord #deploys, with the last 40 log lines.</p></div>
+      <div style="padding: 16px; border: 1px solid {{t.border}}; border-radius: 8px"><h2 style="margin: 0 0 6px; font-size: 13px; color: {{t.muted}}; font-weight: 500">Image</h2><p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px">registry.local/clueline:0d1e5f3</p></div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark !== undefined ? s.dark : (this.props.dark ?? true);
+    const t = dark
+      ? { bg: '#0B0D0C', panel: '#121614', panel2: '#1F2622', border: '#1F2622', borderStrong: '#2A332E', text: '#E6EDE9', soft: '#B7C2BC', muted: '#8A968F', dim: '#5E6A64', accent: '#3DDC84', accentText: '#3DDC84', accentInk: '#06150D', warn: '#F5B83D', warnBg: '#17140C', err: '#FF7A7A', errBg: '#211213', errBorder: '#5C2D33', logBg: '#070908', track: '#1F2622' }
+      : { bg: '#F6F7F6', panel: '#FFFFFF', panel2: '#E3E8E5', border: '#DCE2DE', borderStrong: '#C6CEC9', text: '#101412', soft: '#3A443F', muted: '#56615B', dim: '#6B7670', accent: '#157A42', accentText: '#157A42', accentInk: '#FFFFFF', warn: '#9A5B00', warnBg: '#FFF6E5', err: '#B42318', errBg: '#FDEDEC', errBorder: '#F2B8B5', logBg: '#F1F4F2', track: '#E3E8E5' };
+    return {
+      t,
+      isDark: dark,
+      isLight: !dark,
+      themeLabel: dark ? 'Light' : 'Dark',
+      themePressed: dark ? 'false' : 'true',
+      toggleTheme: () => this.setState({ dark: !dark })
+    };
+  }
+}
+</script>
+</body></html>
+

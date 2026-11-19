@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Unstakd — New project</title>
+<script src="490a6b3c-a622-46c2-95d1-a29b1d55f8ac"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+</style>
+<style>
+body{margin:0}
+a{text-decoration:none}
+</style>
+</helmet>
+<div style="min-height: 980px; background: {{t.bg}}; color: {{t.text}}; font-family: Inter, system-ui, sans-serif; font-size: 14px">
+  <header style="border-bottom: 1px solid {{t.border}}">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px; color: {{t.text}}"><span style="display: inline-block; width: 10px; height: 18px; background: {{t.accent}}"></span>unstakd</a>
+      <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap">
+        <a href="Main.dc.html" style="color: {{t.muted}}">Cancel</a>
+        <button sc-camel-on-click="{{toggleTheme}}" aria-pressed="{{themePressed}}" aria-label="Switch to {{themeLabel}} mode" style="height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid {{t.borderStrong}}; border-radius: 999px; background: {{t.panel}}; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer">
+          <sc-if value="{{isDark}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{isLight}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+          <span>{{themeLabel}}</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 28px">
+    <div>
+      <ol aria-label="Steps" style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+        <li style="padding: 8px 14px; border-radius: 999px; background: {{t.panel2}}; color: {{t.muted}}">1 · repo ✓</li>
+        <li style="padding: 8px 14px; border-radius: 999px; background: {{t.accent}}; color: {{t.accentInk}}; font-weight: 700">2 · configure</li>
+        <li style="padding: 8px 14px; border-radius: 999px; border: 1px solid {{t.borderStrong}}; color: {{t.muted}}">3 · deploy</li>
+      </ol>
+      <h1 style="margin: 20px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 40px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 700">Configure <span style="color: {{t.accentText}}">semantic-nets</span></h1>
+      <p style="margin: 8px 0 0; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace; font-size: 13px">github.com/renfred/semantic-nets · main</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: start">
+      <form style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="padding: 18px 20px; border-radius: 12px; background: {{t.panel}}; border: 1px solid {{t.border}}; display: flex; gap: 16px; align-items: center; flex-wrap: wrap">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: {{t.panel2}}; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 700">N</div>
+          <div style="flex: 1 1 200px"><div style="font-weight: 600">Detected Next.js 15 · Node 22 · pnpm</div><div style="color: {{t.muted}}; font-size: 13px; margin-top: 2px">Railpack will build it. Add a Dockerfile to override.</div></div>
+          <a href="#" style="color: {{t.accentText}}">Change</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+          <label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: {{t.muted}}">Subdomain
+            <span style="display: flex; align-items: center; height: 46px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.panel}}; overflow: hidden"><input value="semantic-nets" style="flex: 1; min-width: 0; height: 46px; padding: 0 14px; border: 0; background: transparent; color: {{t.text}}; font-family: 'JetBrains Mono', monospace; font-size: 14px; outline: none"><span style="padding: 0 14px; color: {{t.muted}}; font-family: 'JetBrains Mono', monospace; font-size: 13px">.unstakd.com</span></span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: {{t.muted}}">Port
+            <input value="3000" style="height: 46px; padding: 0 14px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.panel}}; color: {{t.text}}; font-family: 'JetBrains Mono', monospace; font-size: 14px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: {{t.muted}}">Health check path
+            <input value="/api/health" style="height: 46px; padding: 0 14px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.panel}}; color: {{t.text}}; font-family: 'JetBrains Mono', monospace; font-size: 14px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: {{t.muted}}">Size
+            <sc-raw-select style="height: 46px; padding: 0 14px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.panel}}; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 14px"><option>Small · 0.5 CPU · 256 MB</option><option selected="selected">Medium · 1 CPU · 512 MB</option><option>Large · 2 CPU · 1 GB</option></sc-raw-select>
+          </label>
+        </div>
+        <fieldset style="margin: 0; padding: 20px; border: 1px solid {{t.border}}; border-radius: 12px; background: {{t.panel}}; display: flex; flex-direction: column; gap: 12px">
+          <legend style="padding: 0 8px; font-weight: 600; font-size: 15px">Environment</legend>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+            <input aria-label="Key" value="NEXT_PUBLIC_LANGS" style="height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.bg}}; color: {{t.text}}; font: inherit">
+            <input aria-label="Value" value="en,fr" style="height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.bg}}; color: {{t.text}}; font: inherit">
+            <input aria-label="Key" value="OPENAI_API_KEY" style="height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.bg}}; color: {{t.text}}; font: inherit">
+            <input aria-label="Value" value="••••••••••••" style="height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid {{t.borderStrong}}; background: {{t.bg}}; color: {{t.text}}; font: inherit">
+          </div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap"><button type="button" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 1px dashed {{t.borderStrong}}; background: transparent; color: {{t.text}}; font-family: Inter, sans-serif; font-size: 14px">+ Add variable</button><button type="button" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: {{t.accentText}}; font-family: Inter, sans-serif; font-size: 14px">Paste a .env file</button></div>
+        </fieldset>
+        <label style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 12px; background: {{t.panel}}; border: 1px solid {{t.border}}; cursor: pointer"><input type="checkbox" checked="checked" style="width: 20px; height: 20px; accent-color: {{t.accent}}"><span><span style="display: block; font-weight: 600">Create a Postgres database for this app</span><span style="display: block; color: {{t.muted}}; font-size: 13px; margin-top: 2px">Injected as DATABASE_URL, backed up nightly to R2</span></span></label>
+      </form>
+      <aside style="flex: 1 1 300px; padding: 24px; border-radius: 12px; background: {{t.panel}}; border: 1px solid {{t.border}}; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px">What happens next</h2>
+        <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; line-height: 1.45; color: {{t.soft}}">
+          <li>Build with Railpack, about 1–2 minutes</li>
+          <li>Start the container and wait for /api/health</li>
+          <li>Go live at semantic-nets.unstakd.com with HTTPS</li>
+          <li>Every push to main redeploys</li>
+        </ol>
+        <button style="height: 52px; border: 0; border-radius: 8px; background: {{t.accent}}; color: {{t.accentInk}}; font-family: Inter, sans-serif; font-weight: 700; font-size: 15px">Deploy semantic-nets</button>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark !== undefined ? s.dark : (this.props.dark ?? true);
+    const t = dark
+      ? { bg: '#0B0D0C', panel: '#121614', panel2: '#1F2622', border: '#1F2622', borderStrong: '#2A332E', text: '#E6EDE9', soft: '#B7C2BC', muted: '#8A968F', dim: '#5E6A64', accent: '#3DDC84', accentText: '#3DDC84', accentInk: '#06150D', okBg: '#0F2218', warn: '#F5B83D', warnBg: '#1A1609', err: '#FF7A7A', errBg: '#211213', errBorder: '#5C2D33', logBg: '#070908', track: '#1F2622' }
+      : { bg: '#F6F7F6', panel: '#FFFFFF', panel2: '#E3E8E5', border: '#DCE2DE', borderStrong: '#C6CEC9', text: '#101412', soft: '#3A443F', muted: '#56615B', dim: '#6B7670', accent: '#157A42', accentText: '#157A42', accentInk: '#FFFFFF', okBg: '#E6F4EC', warn: '#9A5B00', warnBg: '#FFF8EA', err: '#B42318', errBg: '#FDEDEC', errBorder: '#F2B8B5', logBg: '#F1F4F2', track: '#E3E8E5' };
+    return {
+      t,
+      isDark: dark,
+      isLight: !dark,
+      themeLabel: dark ? 'Light' : 'Dark',
+      themePressed: dark ? 'false' : 'true',
+      toggleTheme: () => this.setState({ dark: !dark })
+    };
+  }
+}
+</script>
+</body></html>
+
