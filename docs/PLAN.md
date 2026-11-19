@@ -1,89 +1,64 @@
 # Build plan
 
-How we get from an empty repo to the MVP in [PRD.MD](../PRD.MD). Each step ends in one or
-more commits and leaves the app runnable. Check items off as they land.
+How we get from an empty repo to the MVP in [PRD.MD](../PRD.MD). Each step ends in commits and
+leaves the app runnable. Things that need the owner (accounts, keys, a VPS) are in
+[LATER.md](LATER.md).
 
 ## Decisions
 
 - **Build from scratch** (not on top of Coolify/Dokploy), per the PRD's learning goal.
-- **One Next.js app** holds the dashboard and API. The build/deploy **worker is a separate
-  Node process** (`pnpm worker`) sharing `src/lib` and `src/db`, so it can move to another
-  server later (A5) and long builds never block web requests.
-- **Pluggable runtime adapters**: `docker`, `caddy`, `registry` and `builder` live behind
-  small modules in `src/server/`; the dashboard never touches the Docker socket directly.
-- **Logs**: the worker appends build/runtime lines to a log file per deployment and
-  publishes them on Redis; the dashboard streams them with Server-Sent Events.
-- **Auth without Auth.js**: one allowlisted user needs only the OAuth code exchange and a
-  sealed cookie; this avoids a dependency on Next 16 compatibility. GitHub *App* tokens
-  (for cloning) are separate and come in step 6.
-- **Secrets**: AES-256-GCM, master key read from a file (`UNSTAKD_KEY_FILE`), never the DB.
-- **Theme**: CSS variables + Tailwind, cookie-persisted choice, dark by default. See
-  [DESIGN.md](DESIGN.md).
-- **Local dev** runs Postgres + Redis in Docker Compose (Postgres on 5434 to avoid clashes).
-  Caddy and the registry run in Compose too, so the full deploy path works on a laptop
-  with `*.localhost` subdomains.
+- **One Next.js app** for dashboard + API; the **worker is a separate process** (`pnpm worker`)
+  sharing `src/lib`, `src/db` and `src/server`, so long builds never block web requests and it
+  can move to another server later (A5).
+- **Auth without Auth.js**: one allowlisted user needs only the OAuth code exchange and a sealed
+  cookie (`iron-session`).
+- **UI**: look from "Terminal Night + Signal" (dark/light), structure from "Direction B"
+  ([DESIGN.md](DESIGN.md)).
+- **Logs**: the worker appends to a file per deploy and mirrors lines to Redis; the dashboard
+  streams them over SSE. Runtime logs stream straight from Docker.
+- **Secrets**: AES-256-GCM, master key in a file (`UNSTAKD_KEY_FILE`), never in the DB.
+- **Caddy is configured only through its admin API** (one route per project, `@id` = `app-<slug>`);
+  the worker re-applies routes on start.
+- **Images stay in the local Docker image store** for rollbacks; `REGISTRY` enables pushing to a
+  registry (needed only for multi-server, A5).
+- **Backups** go to Cloudflare R2 when configured, otherwise to a local folder.
 
-## Steps
+## Status
 
-### 0 · Docs
-- [x] Rename PRD, add CLAUDE.md, DESIGN.md, this plan; keep the UI template in `docs/design`.
+### Done
+- [x] Docs, design system, scaffold (Next 16, Tailwind 4), dark/light theme
+- [x] Platform schema + migrations + seed; AES-256-GCM secrets
+- [x] GitHub sign-in with allowlist (dev sign-in when no OAuth app is configured)
+- [x] Dashboard: Projects (home), Databases, Activity, Server; project Overview, Deployments,
+  deploy detail with live build logs, runtime Logs, Environment, Domains, Databases, Settings;
+  New project and New database flows
+- [x] Deploy engine: clone → Dockerfile/Railpack build → start (limits, private network) →
+  health check → Caddy switch → retire old container after 30s. Failures keep the live version;
+  rollback reuses images; cancel; redeploy; standby/start; delete with teardown
+- [x] Push-to-deploy webhook (signature-verified, de-duplicated)
+- [x] Databases: one-click Postgres/Redis, link/unlink, usage meters, nightly + manual backups,
+  restore, retention, platform DB backup
+- [x] Custom domains: DNS verification job, statuses, route sync, on-demand TLS ask endpoint
+- [x] Housekeeping: prune images (keep 10) and build logs (30 days), route reconcile on start
+- [x] Production: Dockerfile, `docker-compose.prod.yml`, Caddy with Cloudflare DNS, VPS setup script
 
-### 1 · Scaffold and design system
-- [x] Next.js (App Router, TS strict), Tailwind, ESLint, pnpm, `.env.example`.
-- [x] Theme tokens, fonts, no-flash theme script, `ThemeToggle`.
-- [ ] UI primitives: Button, Pill, Panel, List, Input, Field, LogViewer, StatCard, BrandMark.
-- [ ] App shell: top bar (brand, main nav, server badge, theme toggle, avatar) and project
-  header (breadcrumb, status, actions, tabs).
+Verified locally: zero-downtime redeploy (400/400 requests OK), failed health check keeps the old
+version serving, rollback live in 2s, backup→damage→restore for Postgres and Redis.
 
-### 2 · Data layer
-- [x] `docker-compose.dev.yml`: Postgres, Redis.
-- [x] Drizzle schema for every PRD entity (Project, Deployment, EnvVar, Domain, Database,
-  DatabaseLink, Backup, AuditEvent) + first migration + seed script with sample data.
-- [x] `crypto.ts` (AES-256-GCM) with tests.
+### Needs the owner (see LATER.md)
+- [ ] GitHub OAuth app + GitHub App (private repos, repo picker)
+- [ ] VPS, DNS, Cloudflare token, R2 bucket; first production run
 
-### 3 · Auth
-- [x] GitHub OAuth (hand-rolled, no Auth.js) + `iron-session` sealed cookie, allowlist via
-  `ALLOWED_GITHUB_LOGINS` re-checked on every request, `proxy.ts` guarding everything
-  except `/login`, auth, webhooks and internal endpoints. Dev-only sign-in when
-  `GITHUB_CLIENT_ID` is unset under `next dev`.
-
-### 4 · Dashboard screens (on real data)
-- [ ] Overview: hero (apps up / needs attention), server stats, project list, activity.
-- [ ] New project: repo + branch picker, detection result, subdomain/port/health/size,
-  env editor (with `.env` paste), "create Postgres" option.
-- [ ] Project overview + domains; Deployments list; Environment; Settings.
-- [ ] Deploy detail: step track, build/runtime log tabs (SSE), "still live" panel.
-- [ ] Databases and Activity pages.
-
-### 5 · Deploy engine (PRD milestone 2)
-- [ ] BullMQ queue + worker process, concurrency 1–2, cancel support.
-- [ ] Clone at SHA → build with Railpack (or Dockerfile) via BuildKit → push to registry.
-- [ ] Start container (non-root, CPU/RAM limits, private network, restart policy).
-- [ ] Health check → Caddy route switch via admin API → stop old after grace period.
-- [ ] Failures keep the old version live; statuses and step timings recorded.
-- [ ] Rollback to any of the last 10 images; manual redeploy; restart/stop/standby.
-
-### 6 · GitHub integration (PRD milestone 3)
-- [ ] GitHub App: installation repos list, clone tokens.
-- [ ] Push webhook with signature verification → queue deploy for the tracked branch.
-
-### 7 · Databases and domains (PRD milestone 4)
-- [ ] Provision Postgres/Redis containers with volumes on the private network.
-- [ ] Link to project → inject `DATABASE_URL`/`REDIS_URL` → redeploy.
-- [ ] Nightly backups to R2, 7-day retention, restore.
-- [ ] Custom domains: DNS check job, Caddy route, `/api/internal/domain-allowed` ask
-  endpoint, statuses `pending → verified → active / misconfigured`.
-
-### 8 · Ops
-- [ ] Production Compose (app, worker, Postgres, Redis, Caddy, registry).
-- [ ] `scripts/setup-vps.sh`: firewall, SSH hardening, Docker, wildcard DNS cert.
-- [ ] Housekeeping jobs: prune images (keep 10), build logs (30d), runtime logs (24h).
-- [ ] Platform DB backup to R2.
-
-### Later (v1.1 per PRD)
-Preview deploys, static-site mode, CLI, alerts, metrics charts, audit log UI, www→apex.
+### v1.1 (from the PRD)
+- [ ] Preview deploys per PR (D8)
+- [ ] Static-site mode (D9)
+- [ ] Runtime metrics charts (R6)
+- [ ] www → apex redirects (N3)
+- [ ] SSH tunnel for database tools (B4)
+- [ ] CLI (A2)
+- [ ] Failed-deploy alerts by email/Discord (A3)
 
 ## Definition of done for each step
 - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass.
-- New UI checked in **both** dark and light mode and at phone width.
+- New UI checked in dark **and** light mode and at phone width.
 - Committed as one or more focused commits.
