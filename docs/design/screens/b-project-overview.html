@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Unstakd — twoday overview</title>
+<script src="4812ce28-e3b9-4e5c-8a4b-380a985c34cf"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+</style>
+<style>
+body{margin:0;background:#FFFFFF}
+a{color:#2F5BEA;text-decoration:none}a:hover{color:#1E40B8}
+</style>
+</helmet>
+<div style="min-height: 980px; background: #FFFFFF; color: #111827; font-family: Geist, system-ui, sans-serif; font-size: 14px">
+  <header style="border-bottom: 1px solid #E4E7EC">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 16px 32px 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 15px">
+          <span style="font-weight: 700; letter-spacing: -0.02em; font-size: 18px">unstakd</span>
+          <span style="color: #C3C8D0">/</span>
+          <span style="font-weight: 600">twoday</span>
+          <span style="padding: 2px 10px; border-radius: 999px; background: #E9F6EE; color: #157F3B; font-size: 12px; font-weight: 600">Live</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <a href="#" style="height: 44px; padding: 0 16px; display: inline-flex; align-items: center; border: 1px solid #E4E7EC; border-radius: 8px; color: #111827">Visit site</a>
+          <button style="height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: {{accent}}; color: #FFFFFF; font-family: Geist, sans-serif; font-size: 14px; font-weight: 600">Redeploy</button>
+        </div>
+      </div>
+      <nav aria-label="Project" style="display: flex; flex-wrap: wrap; gap: 4px">
+        <a href="#" style="padding: 12px 14px; color: #111827; font-weight: 600; border-bottom: 2px solid #111827">Overview</a>
+        <a href="#" style="padding: 12px 14px; color: #5B6472">Deployments</a>
+        <a href="#" style="padding: 12px 14px; color: #5B6472">Logs</a>
+        <a href="#" style="padding: 12px 14px; color: #5B6472">Environment</a>
+        <a href="#" style="padding: 12px 14px; color: #5B6472">Domains</a>
+        <a href="Databases.dc.html" style="padding: 12px 14px; color: #5B6472">Databases</a>
+        <a href="#" style="padding: 12px 14px; color: #5B6472">Settings</a>
+      </nav>
+    </div>
+  </header>
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px; display: flex; flex-direction: column; gap: 32px">
+    <section style="display: flex; flex-wrap: wrap; gap: 24px; padding: 24px; border: 1px solid #E4E7EC; border-radius: 12px">
+      <div style="flex: 1 1 360px; min-height: 200px; border-radius: 8px; background: #F6F7F9; border: 1px solid #E4E7EC; display: flex; align-items: center; justify-content: center; color: #5B6472; font-size: 13px">[ live screenshot of twoday.unstakd.com ]</div>
+      <dl style="flex: 1 1 360px; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; align-content: start">
+        <div><dt style="color: #5B6472; font-size: 13px">Current deploy</dt><dd style="margin: 4px 0 0; font-weight: 600">#47 · 2 days ago</dd></div>
+        <div><dt style="color: #5B6472; font-size: 13px">Commit</dt><dd style="margin: 4px 0 0; font-family: 'Geist Mono', monospace; font-size: 13px">e51a0c2 notes on photos</dd></div>
+        <div><dt style="color: #5B6472; font-size: 13px">Branch</dt><dd style="margin: 4px 0 0; font-family: 'Geist Mono', monospace; font-size: 13px">main</dd></div>
+        <div><dt style="color: #5B6472; font-size: 13px">Build</dt><dd style="margin: 4px 0 0">Railpack · Next.js 15</dd></div>
+        <div><dt style="color: #5B6472; font-size: 13px">Resources</dt><dd style="margin: 4px 0 0">1 CPU · 512 MB · using 188 MB</dd></div>
+        <div><dt style="color: #5B6472; font-size: 13px">Linked database</dt><dd style="margin: 4px 0 0"><a href="Databases.dc.html">twoday-pg</a></dd></div>
+      </dl>
+    </section>
+    <section aria-labelledby="domains-h" style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px">
+        <div>
+          <h2 id="domains-h" style="margin: 0; font-size: 18px; font-weight: 600">Domains</h2>
+          <p style="margin: 4px 0 0; color: #5B6472">Point a CNAME at <span style="font-family: 'Geist Mono', monospace; color: #111827">edge.unstakd.com</span>, or an A record for a root domain.</p>
+        </div>
+        <form style="display: flex; gap: 8px; flex-wrap: wrap">
+          <label for="new-domain" style="position: absolute; left: -9999px">Add domain</label>
+          <input id="new-domain" placeholder="photos.example.com" style="height: 44px; width: 260px; padding: 0 14px; border: 1px solid #D0D5DD; border-radius: 8px; font-family: 'Geist Mono', monospace; font-size: 13px">
+          <button type="button" style="height: 44px; padding: 0 16px; border: 1px solid #D0D5DD; border-radius: 8px; background: #FFFFFF; font-family: Geist, sans-serif; font-size: 14px; font-weight: 600; color: #111827">Add domain</button>
+        </form>
+      </div>
+      <div style="border: 1px solid #E4E7EC; border-radius: 12px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px">
+          <div style="display: flex; align-items: center; gap: 12px"><span style="font-family: 'Geist Mono', monospace">twoday.unstakd.com</span><span style="font-size: 12px; color: #5B6472">default</span></div>
+          <span style="padding: 2px 10px; border-radius: 999px; background: #E9F6EE; color: #157F3B; font-size: 12px; font-weight: 600">Active · HTTPS</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-top: 1px solid #E4E7EC">
+          <div style="display: flex; align-items: center; gap: 12px"><span style="font-family: 'Geist Mono', monospace">ourtwoday.com</span><span style="font-size: 12px; color: #5B6472">primary</span></div>
+          <span style="padding: 2px 10px; border-radius: 999px; background: #E9F6EE; color: #157F3B; font-size: 12px; font-weight: 600">Active · HTTPS</span>
+        </div>
+        <div style="padding: 16px 20px; border-top: 1px solid #E4E7EC; background: #FFFBF2; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 12px"><span style="font-family: 'Geist Mono', monospace">www.ourtwoday.com</span><span style="font-size: 12px; color: #5B6472">redirects to primary</span></div>
+            <span style="padding: 2px 10px; border-radius: 999px; background: #FDF0DC; color: #8A4A07; font-size: 12px; font-weight: 600">Waiting for DNS · checked 40s ago</span>
+          </div>
+          <div style="overflow-x: auto">
+            <sc-raw-table style="border-collapse: collapse; font-size: 13px; min-width: 520px">
+              <sc-raw-thead><sc-raw-tr style="color: #5B6472; text-align: left"><sc-raw-th style="padding: 4px 24px 4px 0; font-weight: 500">Type</sc-raw-th><sc-raw-th style="padding: 4px 24px 4px 0; font-weight: 500">Name</sc-raw-th><sc-raw-th style="padding: 4px 24px 4px 0; font-weight: 500">Value</sc-raw-th></sc-raw-tr></sc-raw-thead>
+              <sc-raw-tbody><sc-raw-tr style="font-family: 'Geist Mono', monospace"><sc-raw-td style="padding: 4px 24px 4px 0">CNAME</sc-raw-td><sc-raw-td style="padding: 4px 24px 4px 0">www</sc-raw-td><sc-raw-td style="padding: 4px 24px 4px 0">edge.unstakd.com</sc-raw-td><sc-raw-td><button style="height: 32px; padding: 0 10px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; font-family: Geist, sans-serif; font-size: 12px; color: #111827">Copy</button></sc-raw-td></sc-raw-tr></sc-raw-tbody>
+            </sc-raw-table>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600">Recent deployments</h2>
+      <ol style="list-style: none; margin: 0; padding: 0; border: 1px solid #E4E7EC; border-radius: 12px">
+        <li style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 14px 20px"><span><span style="color: #157F3B; font-weight: 600">● Live</span>&nbsp;&nbsp;#47 notes on photos</span><span style="color: #5B6472; font-family: 'Geist Mono', monospace; font-size: 13px">e51a0c2 · 1m 04s · 2 days ago</span></li>
+        <li style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 14px 20px; border-top: 1px solid #E4E7EC"><span><span style="color: #5B6472; font-weight: 600">○ Ready</span>&nbsp;&nbsp;#46 mashup frame picker <a href="#" style="margin-left: 8px">Roll back</a></span><span style="color: #5B6472; font-family: 'Geist Mono', monospace; font-size: 13px">b2c9d81 · 58s · 4 days ago</span></li>
+        <li style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 14px 20px; border-top: 1px solid #E4E7EC"><span><span style="color: #B42318; font-weight: 600">✕ Failed</span>&nbsp;&nbsp;#45 upgrade sharp</span><span style="color: #5B6472; font-family: 'Geist Mono', monospace; font-size: 13px">3fa77e0 · build error · 5 days ago</span></li>
+      </ol>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2F5BEA&quot;,&quot;options&quot;:[&quot;#2F5BEA&quot;,&quot;#111827&quot;,&quot;#0F766E&quot;]},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:980}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#2F5BEA' };
+  }
+}
+</script>
+</body></html>

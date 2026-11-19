@@ -15,7 +15,7 @@ export type ProjectRow = {
   buildingSince?: string;
 };
 
-export function ProjectList({ rows, title }: { rows: ProjectRow[]; title: string }) {
+export function ProjectList({ rows, title, as: Heading = "h2" }: { rows: ProjectRow[]; title: string; as?: "h1" | "h2" }) {
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
@@ -44,7 +44,7 @@ export function ProjectList({ rows, title }: { rows: ProjectRow[]; title: string
     <section aria-labelledby="proj-h" className="flex flex-col gap-3.5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="proj-h" className="m-0 text-lg font-semibold">{title}</h2>
+          <Heading id="proj-h" className={Heading === "h1" ? "m-0 font-display text-[28px] font-bold tracking-[-0.02em]" : "m-0 text-lg font-semibold"}>{title}</Heading>
           <p className="mt-1 text-muted">{parts.join(" · ")}</p>
         </div>
         <label className="flex h-11 items-center gap-2 rounded-lg border border-border bg-panel px-3 font-mono text-[13px] text-muted">

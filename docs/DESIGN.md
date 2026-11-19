@@ -1,14 +1,33 @@
-# Unstakd design system — "Terminal Night + Signal"
+# Unstakd design system
 
-Source of truth: [design/ui-template.html](design/ui-template.html) (bundled; open in a browser).
-Readable per-screen markup extracted from it lives in [design/screens/](design/screens/):
+Two reference templates, each a bundled HTML file you can open in a browser:
+
+- **Look** — [design/ui-template.html](design/ui-template.html), "Terminal Night + Signal":
+  colors, type, both themes, parts (pills, panels, log viewer).
+- **Structure** — [design/ui-template-b.html](design/ui-template-b.html), "Direction B: Clean
+  Paper": navigation and page layouts. Its own colors and fonts are *not* used.
+
+### Navigation (from Direction B)
+
+- Top bar: brand · **Projects** (home, `/`) · **Databases** · **Activity** · **Server**, then on
+  the right the section's primary action (New project / New database), theme toggle, avatar.
+- Project header: breadcrumb `unstakd / <project>` + status pill, Visit site + Redeploy, then
+  tabs **Overview · Deployments · Logs · Environment · Domains · Databases · Settings**.
+- Project overview: preview + facts grid → Domains (with DNS records) → Recent deployments.
+- Databases: card grid (select one) → detail panel with connection string (Reveal / Copy),
+  Back up now, and a backups table with Restore.
+
+Readable markup extracted from both bundles lives in [design/screens/](design/screens/)
+(`b-*.html` are Direction B):
 
 | Screen | File | Route |
 | --- | --- | --- |
-| Overview | `overview.html` | `/` |
+| Overview (superseded by B: home is the project list, stats moved to `/server`) | `overview.html` | `/`, `/server` |
 | Project · overview + domains | `project-domains.html` | `/projects/[slug]` |
 | Deploy detail · live logs | `deploy-logs.html` | `/projects/[slug]/deployments/[n]` |
 | New project | `new-project.html` | `/new` |
+| Project overview (B) | `b-project-overview.html` | `/projects/[slug]` |
+| Databases (B) | `b-databases.html` | `/databases` |
 
 Screens not in the template (databases, env, settings, activity, login) reuse the same
 parts: panel, list rows, pills, mono metadata, the log viewer.

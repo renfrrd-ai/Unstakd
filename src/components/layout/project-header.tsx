@@ -5,7 +5,7 @@ import { NavLinks } from "./nav-links";
 
 export type Crumb = { label: string; href?: string };
 
-export function ProjectHeader({ slug, crumbs, status, actions }: { slug: string; crumbs: Crumb[]; status?: ReactNode; actions?: ReactNode }) {
+export function ProjectHeader({ slug, crumbs, status, actions, trailing }: { slug: string; crumbs: Crumb[]; status?: ReactNode; actions?: ReactNode; trailing?: ReactNode }) {
   const base = `/projects/${slug}`;
   const tabs = [
     { href: base, label: "Overview", exact: true },
@@ -13,6 +13,7 @@ export function ProjectHeader({ slug, crumbs, status, actions }: { slug: string;
     { href: `${base}/logs`, label: "Logs" },
     { href: `${base}/environment`, label: "Environment" },
     { href: `${base}/domains`, label: "Domains" },
+    { href: `${base}/databases`, label: "Databases" },
     { href: `${base}/settings`, label: "Settings" },
   ];
 
@@ -34,6 +35,7 @@ export function ProjectHeader({ slug, crumbs, status, actions }: { slug: string;
           <div className="flex flex-wrap items-center gap-2.5">
             {actions}
             <ThemeToggle />
+            {trailing}
           </div>
         </div>
         <NavLinks items={tabs} label="Project" variant="tab" />

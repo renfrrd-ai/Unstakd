@@ -6,6 +6,8 @@ const schema = z.object({
   UNSTAKD_KEY_FILE: z.string().min(1),
   APP_URL: z.string().url().default("http://localhost:3000"),
   APPS_DOMAIN: z.string().min(1).default("localhost"),
+  EDGE_HOST: z.string().default("edge.unstakd.com"),
+  EDGE_IP: z.string().default(""),
   GITHUB_CLIENT_ID: z.string().default(""),
   GITHUB_CLIENT_SECRET: z.string().default(""),
   ALLOWED_GITHUB_LOGINS: z

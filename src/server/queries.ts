@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Deployment, Domain, Project } from "@/db/schema";
@@ -51,13 +52,14 @@ export async function listProjects(): Promise<ProjectSummary[]> {
   return (await summarize(projects)).sort((a, b) => order[a.health] - order[b.health]);
 }
 
-export async function getProject(slug: string): Promise<ProjectSummary | null> {
+// Deduped per request: the project header and the tab page both ask for it.
+export const getProject = cache(async (slug: string): Promise<ProjectSummary | null> => {
   await requireUser();
   const [project] = await db().select().from(s.projects).where(eq(s.projects.slug, slug));
   if (!project) return null;
   const [summary] = await summarize([project]);
   return summary;
-}
+});
 
 export async function listDeployments(projectId: string, limit = 20) {
   await requireUser();
@@ -134,4 +136,9 @@ export async function linkedDatabases(projectId: string) {
 export async function recentActivity(limit = 10) {
   await requireUser();
   return db().select().from(s.auditEvents).orderBy(desc(s.auditEvents.createdAt)).limit(limit);
+}
+
+export async function listBackups(databaseId: string, limit = 7) {
+  await requireUser();
+  return db().select().from(s.backups).where(eq(s.backups.databaseId, databaseId)).orderBy(desc(s.backups.createdAt)).limit(limit);
 }

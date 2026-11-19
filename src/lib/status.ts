@@ -27,9 +27,9 @@ export const healthPill: Record<ProjectHealth, { tone: Tone; label: string }> = 
 };
 
 export const deploymentLabel: Record<Deployment["status"], { tone: Tone; glyph: string; label: string }> = {
-  queued: { tone: "warn", glyph: "◌", label: "Queued" },
-  building: { tone: "warn", glyph: "◐", label: "Building" },
-  deploying: { tone: "warn", glyph: "◑", label: "Deploying" },
+  queued: { tone: "warn", glyph: "●", label: "Queued" },
+  building: { tone: "warn", glyph: "●", label: "Building" },
+  deploying: { tone: "warn", glyph: "●", label: "Deploying" },
   live: { tone: "ok", glyph: "●", label: "Live" },
   failed: { tone: "err", glyph: "✕", label: "Failed" },
   superseded: { tone: "neutral", glyph: "○", label: "Ready" },
