@@ -91,6 +91,8 @@ describe("reserved names", () => {
     const { newSlugSchema } = await import("@/lib/validation");
     expect(newSlugSchema.safeParse("dash").success).toBe(false);
     expect(newSlugSchema.safeParse("Edge").success).toBe(false);
-    expect(newSlugSchema.safeParse("dashboard").success).toBe(true);
+    for (const n of ["www", "app", "mail", "smtp", "api", "pr-12-blog"]) expect(newSlugSchema.safeParse(n).success).toBe(false);
+    expect(newSlugSchema.safeParse("blog").success).toBe(true);
+    expect(newSlugSchema.safeParse("pr-blog").success).toBe(true);
   });
 });

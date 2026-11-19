@@ -5,9 +5,17 @@ export const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 export const REPO = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/;
 
 export const slugSchema = z.string().trim().toLowerCase().regex(SLUG, "Use 1–40 lowercase letters, numbers or dashes");
-// Subdomains of APPS_DOMAIN the platform itself uses; an app with one of these names would shadow it.
-export const RESERVED_SLUGS = ["dash", "edge", "www", "api", "admin", "mail", "status"];
-export const newSlugSchema = slugSchema.refine((v) => !RESERVED_SLUGS.includes(v), "That name is reserved for the platform (dash, edge, www, …); pick another");
+// Subdomains an app must not take: the platform's own hosts, mail/DNS conventions, names that
+// would look official (phishing), and pr-<n>-* which preview deploys use.
+export const RESERVED_SLUGS = new Set([
+  "dash", "dashboard", "edge", "www", "app", "apps", "api", "admin", "status", "docs", "cdn", "static", "assets",
+  "mail", "email", "webmail", "smtp", "imap", "pop", "pop3", "mx", "autoconfig", "autodiscover",
+  "ns", "ns1", "ns2", "ns3", "dns", "ftp", "sftp", "ssh", "vpn", "git", "registry",
+  "auth", "login", "signin", "sso", "oauth", "account", "accounts", "billing", "support", "help", "security",
+  "internal", "localhost", "root", "unstakd",
+]);
+export const isReservedSlug = (slug: string) => RESERVED_SLUGS.has(slug) || /^pr-\d+-/.test(slug);
+export const newSlugSchema = slugSchema.refine((v) => !isReservedSlug(v), "That name is reserved (platform, mail, DNS or preview addresses); pick another");
 // Static mode: blank means auto-detect (stored as null).
 export const buildCommandSchema = z
   .string()
