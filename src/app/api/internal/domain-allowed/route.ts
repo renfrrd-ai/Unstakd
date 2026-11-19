@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { NextRequest } from "next/server";
+import { connection, type NextRequest } from "next/server";
 import { db, schema as s } from "@/db";
 import { normalizeHostname } from "@/lib/dns";
 import { env } from "@/lib/env";
@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
 // Caddy's on-demand TLS "ask" hook: a certificate is only issued for hosts we actually serve,
 // so stray domains pointed at the server can't burn Let's Encrypt rate limits.
 export async function GET(request: NextRequest) {
+  await connection();
   const host = normalizeHostname(request.nextUrl.searchParams.get("domain") ?? "");
   if (!host) return new Response(null, { status: 400 });
 

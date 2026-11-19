@@ -1,6 +1,6 @@
 import { PassThrough } from "node:stream";
 import { eq } from "drizzle-orm";
-import type { NextRequest } from "next/server";
+import { connection, type NextRequest } from "next/server";
 import { db, schema as s } from "@/db";
 import { slugSchema } from "@/lib/validation";
 import { docker } from "@/server/docker";
@@ -10,6 +10,7 @@ const encoder = new TextEncoder();
 
 // Live container output: the last 24 hours, then follow. Each SSE message is a LogLine with `at` = epoch ms.
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/projects/[slug]/logs">) {
+  await connection();
   if (!(await getUser())) return new Response("unauthorized", { status: 401 });
   const slug = slugSchema.safeParse((await ctx.params).slug);
   if (!slug.success) return new Response("not found", { status: 404 });

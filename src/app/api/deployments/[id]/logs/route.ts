@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { NextRequest } from "next/server";
+import { connection, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db, schema as s } from "@/db";
 import type { LogMessage } from "@/lib/log-format";
@@ -11,6 +11,7 @@ import { getUser } from "@/server/session";
 const encoder = new TextEncoder();
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/deployments/[id]/logs">) {
+  await connection();
   if (!(await getUser())) return new Response("unauthorized", { status: 401 });
   const parsed = z.string().uuid().safeParse((await ctx.params).id);
   if (!parsed.success) return new Response("not found", { status: 404 });

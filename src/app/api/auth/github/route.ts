@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, connection } from "next/server";
 import { env } from "@/lib/env";
 import { safeNext, STATE_COOKIE } from "@/server/oauth";
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  await connection();
   const { GITHUB_CLIENT_ID, APP_URL } = env();
   if (!GITHUB_CLIENT_ID) return NextResponse.json({ error: "GitHub sign-in is not configured" }, { status: 500 });
 

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, connection } from "next/server";
 import { z } from "zod";
 import { env } from "@/lib/env";
 import { parseState, safeNext, STATE_COOKIE } from "@/server/oauth";
@@ -21,6 +21,7 @@ function same(a: string, b: string) {
 }
 
 export async function GET(request: NextRequest) {
+  await connection();
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
   const saved = parseState(request.cookies.get(STATE_COOKIE)?.value);
