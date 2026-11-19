@@ -12,7 +12,7 @@ const levelClass: Record<LogLine["level"], string> = {
 };
 
 // Streams JSON LogLine messages from `streamUrl` (SSE) after rendering `initial`.
-export function LogViewer({ initial, streamUrl, header, empty = "No output yet.", className }: { initial: LogLine[]; streamUrl?: string; header?: ReactNode; empty?: string; className?: string }) {
+export function LogViewer({ initial, streamUrl, header, empty = "No output yet.", className, clock = false }: { initial: LogLine[]; streamUrl?: string; header?: ReactNode; empty?: string; className?: string; clock?: boolean }) {
   const [lines, setLines] = useState(initial);
   const [live, setLive] = useState(false);
   const box = useRef<HTMLPreElement>(null);
@@ -61,7 +61,7 @@ export function LogViewer({ initial, streamUrl, header, empty = "No output yet."
         ) : (
           lines.map((l, i) => (
             <div key={i}>
-              <span className="text-dim select-none">{stamp(l.at)}</span>
+              <span className="text-dim select-none" suppressHydrationWarning>{clock ? new Date(l.at).toLocaleTimeString("en-CA", { hour12: false }) : stamp(l.at)}</span>
               {"  "}
               <span className={levelClass[l.level]}>{l.text}</span>
             </div>

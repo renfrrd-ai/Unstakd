@@ -30,9 +30,9 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
           <Panel className="flex flex-wrap items-center gap-4 px-5 py-4.5">
-            <div className="flex size-11 items-center justify-center rounded-[10px] bg-panel-2 font-mono font-bold">{(detected.framework ?? "?")[0]}</div>
+            <div className="flex size-11 items-center justify-center rounded-[10px] bg-panel-2 font-mono font-bold">{detected.framework?.[0] ?? (detected.mode === "dockerfile" ? "D" : "?")}</div>
             <div className="flex-[1_1_200px]">
-              <div className="font-semibold">Detected {detected.framework ?? "an unknown stack"}</div>
+              <div className="font-semibold">{detected.framework ? `Detected ${detected.framework}` : detected.mode === "dockerfile" ? "Detected a Dockerfile" : "Couldn’t detect the stack"}</div>
               <div className="mt-0.5 text-[13px] text-muted">
                 {detected.mode === "dockerfile" ? "Your Dockerfile will be used to build it." : "Railpack will build it. Add a Dockerfile to override."}
               </div>
@@ -71,8 +71,8 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
           </label>
         </div>
         <Panel className="flex flex-[1_1_300px] flex-col gap-4 p-6">
-          <h2 className="m-0 font-display text-xl">What happens next</h2>
-          <ol className="m-0 flex flex-col gap-2.5 pl-5 leading-snug text-soft">
+          <h2 className="m-0 font-display text-xl font-bold">What happens next</h2>
+          <ol className="m-0 flex list-decimal flex-col gap-2.5 pl-5 leading-snug text-soft marker:text-dim">
             <li>Build with {detected.mode === "dockerfile" ? "your Dockerfile" : "Railpack"}, about 1–2 minutes</li>
             <li>Start the container and wait for {health || "/"} on port {port}</li>
             <li>Go live at <span className="font-mono text-[13px] break-all">{host}</span></li>
