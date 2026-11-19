@@ -18,6 +18,8 @@ export function describeEvent(e: Pick<AuditEvent, "action" | "target" | "details
       return { text: `Connection string for ${e.target} revealed`, detail: "" };
     case "domain.certificate":
       return { text: `Certificate issued for ${e.target}`, detail: String(d.issuer ?? "let's encrypt").toLowerCase() };
+    case "domain.misconfigured":
+      return { text: `${e.target} no longer points here`, detail: d.dns === "missing" ? "DNS record missing" : "DNS points elsewhere" };
     case "domain.added":
       return { text: `Domain ${e.target} added`, detail: String(d.project ?? "") };
     case "domain.removed":

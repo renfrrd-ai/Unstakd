@@ -1,6 +1,7 @@
 import { Queue, Worker } from "bullmq";
 import { DEPLOY_QUEUE, OPS_QUEUE, type DeployJob, type OpsJob } from "@/lib/queue";
 import { createRedis } from "@/lib/redis";
+import { reconcileRoutes } from "./housekeeping";
 import { handleOps } from "./ops";
 
 const concurrency = Number(process.env.BUILD_CONCURRENCY ?? 1);
@@ -23,6 +24,9 @@ for (const [name, w] of [["ops", ops], ["deploys", deploys]] as const) {
 
 const scheduler = new Queue<OpsJob>(OPS_QUEUE, { connection: createRedis() });
 await scheduler.upsertJobScheduler("db-stats", { every: 5 * 60_000 }, { name: "db-stats", data: { kind: "db-stats" } });
+await scheduler.upsertJobScheduler("prune", { pattern: "0 4 * * *", tz: process.env.TZ ?? "America/Toronto" }, { name: "prune", data: { kind: "prune" } });
+await reconcileRoutes((l) => console.log(`[startup] ${l}`)).catch((e) => console.error(`[startup] route reconcile failed: ${e.message}`));
+await scheduler.upsertJobScheduler("domain-check", { every: 60_000 }, { name: "domain-check", data: { kind: "domain-check" } });
 await scheduler.upsertJobScheduler(
   "nightly-backup",
   { pattern: process.env.BACKUP_CRON ?? "0 3 * * *", tz: process.env.TZ ?? "America/Toronto" },

@@ -8,6 +8,8 @@ import { removeRoute, setRoute } from "@/server/caddy";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
 import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
 import { routeHosts } from "./deploy";
+import { checkDomains } from "./domains";
+import { prune } from "./housekeeping";
 
 export async function handleOps(job: Job<OpsJob>) {
   const data = job.data;
@@ -58,6 +60,12 @@ export async function handleOps(job: Job<OpsJob>) {
       for (const row of rows) await recordUsage(row);
       return;
     }
+    case "prune":
+      await prune(log);
+      return;
+    case "domain-check":
+      await checkDomains(log);
+      return;
     case "stop-container": {
       // Only stop it if it's no longer the live container of its project.
       const live = await db().select({ id: s.deployments.id }).from(s.deployments).where(and(eq(s.deployments.containerName, data.containerName), eq(s.deployments.status, "live")));
@@ -97,7 +105,9 @@ export async function handleOps(job: Job<OpsJob>) {
     case "destroy-db":
       await destroyDatabase(data.containerName, data.volumeName, { keepVolume: data.keepVolume });
       return;
-    default:
-      throw new Error(`ops job "${data.kind}" is not supported by this worker yet`);
+    default: {
+      const unknown: never = data;
+      throw new Error(`unknown ops job ${JSON.stringify(unknown)}`);
+    }
   }
 }
