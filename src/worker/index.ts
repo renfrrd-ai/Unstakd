@@ -23,6 +23,7 @@ for (const [name, w] of [["ops", ops], ["deploys", deploys]] as const) {
 }
 
 const scheduler = new Queue<OpsJob>(OPS_QUEUE, { connection: createRedis() });
+await scheduler.upsertJobScheduler("app-stats", { every: 60_000 }, { name: "app-stats", data: { kind: "app-stats" } });
 await scheduler.upsertJobScheduler("db-stats", { every: 5 * 60_000 }, { name: "db-stats", data: { kind: "db-stats" } });
 await scheduler.upsertJobScheduler("prune", { pattern: "0 4 * * *", tz: process.env.TZ ?? "America/Toronto" }, { name: "prune", data: { kind: "prune" } });
 await reconcileRoutes((l) => console.log(`[startup] ${l}`)).catch((e) => console.error(`[startup] route reconcile failed: ${e.message}`));

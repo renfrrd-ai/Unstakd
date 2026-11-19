@@ -26,6 +26,8 @@
   --err-border: light-dark(#f2b8b5, #5c2d33);
   --log-bg: light-dark(#f1f4f2, #070908);
   --track: light-dark(#e3e8e5, #1f2622);
+  /* Chart series: validated against each surface (dark uses a darker green than --accent). */
+  --chart: light-dark(#157a42, #25ad62);
 }
 
 :root[data-theme="dark"] {
@@ -57,6 +59,7 @@
   --color-err-border: var(--err-border);
   --color-log-bg: var(--log-bg);
   --color-track: var(--track);
+  --color-chart: var(--chart);
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;

@@ -142,3 +142,16 @@ export async function listBackups(databaseId: string, limit = 7) {
   await requireUser();
   return db().select().from(s.backups).where(eq(s.backups.databaseId, databaseId)).orderBy(desc(s.backups.createdAt)).limit(limit);
 }
+
+export async function appMetrics(projectId: string, sinceMs = 24 * 3600_000) {
+  await requireUser();
+  const rows = await db()
+    .select()
+    .from(s.appMetrics)
+    .where(and(eq(s.appMetrics.projectId, projectId), gte(s.appMetrics.at, new Date(Date.now() - sinceMs))))
+    .orderBy(s.appMetrics.at);
+  // The counter belongs to a container and resets on redeploy, so count increases only.
+  let restarts = 0;
+  for (let i = 1; i < rows.length; i++) restarts += Math.max(0, rows[i].restarts - rows[i - 1].restarts);
+  return { rows, restarts };
+}

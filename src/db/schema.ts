@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  index,
   boolean,
   integer,
   jsonb,
@@ -186,3 +187,20 @@ export const settings = pgTable("settings", {
   valueEnc: text("value_enc").notNull(),
   updatedAt: updatedAt(),
 });
+
+// One sample per live app per minute, kept 7 days.
+export const appMetrics = pgTable(
+  "app_metrics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    cpuPct: real("cpu_pct").notNull(),
+    memBytes: bigint("mem_bytes", { mode: "number" }).notNull(),
+    restarts: integer("restarts").notNull(),
+  },
+  (t) => [index("app_metrics_project_at").on(t.projectId, t.at)],
+);
+export type AppMetric = typeof appMetrics.$inferSelect;

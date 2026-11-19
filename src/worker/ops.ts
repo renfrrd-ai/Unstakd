@@ -11,6 +11,7 @@ import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@
 import { routeHosts } from "./deploy";
 import { checkDomains } from "./domains";
 import { prune } from "./housekeeping";
+import { sampleAppMetrics } from "./metrics";
 
 export async function handleOps(job: Job<OpsJob>) {
   const data = job.data;
@@ -76,6 +77,9 @@ export async function handleOps(job: Job<OpsJob>) {
       for (const row of rows) await recordUsage(row);
       return;
     }
+    case "app-stats":
+      await sampleAppMetrics();
+      return;
     case "prune":
       await prune(log);
       return;

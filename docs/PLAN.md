@@ -52,7 +52,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 ### v1.1 (from the PRD)
 - [ ] Preview deploys per PR (D8)
 - [ ] Static-site mode (D9)
-- [ ] Runtime metrics charts (R6)
+- [x] Runtime metrics: CPU and memory charts (24h) and crash restarts per app (R6)
 - [ ] www → apex redirects (N3)
 - [ ] SSH tunnel for database tools (B4)
 - [ ] CLI (A2)

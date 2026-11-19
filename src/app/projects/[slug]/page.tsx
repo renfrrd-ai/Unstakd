@@ -11,7 +11,9 @@ import { env } from "@/lib/env";
 import { shortSha, timeAgo } from "@/lib/format";
 import { healthPill } from "@/lib/status";
 import { loadProject } from "@/server/load-project";
-import { linkedDatabases, listDeployments, listDomains } from "@/server/queries";
+import { appMetrics, linkedDatabases, listDeployments, listDomains } from "@/server/queries";
+import { LineChart } from "@/components/charts/line-chart";
+import { bytes } from "@/lib/format";
 
 type Params = PageProps<"/projects/[slug]">["params"];
 
@@ -20,6 +22,9 @@ export default function ProjectPage({ params }: PageProps<"/projects/[slug]">) {
     <PageMain className="gap-8">
       <Suspense fallback={<Skeleton className="h-56" />}>
         <Summary params={params} />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-64" />}>
+        <Resources params={params} />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-48" />}>
         <Domains params={params} />
@@ -49,10 +54,10 @@ async function Summary({ params }: { params: Params }) {
 
   return (
     <Panel className="flex flex-wrap gap-6 p-6">
-      <div className="flex min-h-48 flex-[1_1_360px] flex-col justify-between gap-4 rounded-lg bg-panel-2 p-5">
+      <div className="flex min-h-48 min-w-0 flex-[1_1_280px] flex-col justify-between gap-4 rounded-lg bg-panel-2 p-5">
         <div className="flex items-center gap-2 font-mono text-xs text-muted">
           <span className="size-2 rounded-full bg-err-border" /><span className="size-2 rounded-full bg-warn" /><span className="size-2 rounded-full bg-accent" />
-          <span className="ml-2 truncate">{publicUrl(p.primaryHost)}</span>
+          <span className="ml-2 min-w-0 truncate">{publicUrl(p.primaryHost)}</span>
         </div>
         <div>
           <a href={publicUrl(p.primaryHost)} target="_blank" rel="noreferrer" className="m-0 block font-display text-3xl font-bold tracking-[-0.02em] break-all text-text hover:underline">{p.primaryHost}</a>
@@ -62,7 +67,7 @@ async function Summary({ params }: { params: Params }) {
           </p>
         </div>
       </div>
-      <dl className="m-0 grid flex-[1_1_360px] grid-cols-2 content-start gap-x-6 gap-y-5">
+      <dl className="m-0 grid min-w-0 flex-[1_1_280px] grid-cols-2 content-start gap-x-6 gap-y-5">
         <Fact label="Current deploy">
           {current ? <Link href={`/projects/${p.slug}/deployments/${current.number}`} className="font-semibold text-text hover:underline">#{current.number} · {timeAgo(current.createdAt)}</Link> : "—"}
         </Fact>
@@ -81,6 +86,38 @@ async function Summary({ params }: { params: Params }) {
         </Fact>
       </dl>
     </Panel>
+  );
+}
+
+async function Resources({ params }: { params: Params }) {
+  const p = await loadProject(params);
+  if (!p.live) return null;
+  const { rows, restarts } = await appMetrics(p.id);
+  const now = Date.now();
+  const limit = p.memoryMb * 1024 * 1024;
+  const latest = rows.at(-1);
+  return (
+    <section aria-labelledby="res-h" className="flex flex-col gap-3.5">
+      <SectionHeader
+        id="res-h"
+        title="Resources"
+        description={
+          latest
+            ? `Using ${bytes(latest.memBytes)} of ${bytes(limit)} and ${latest.cpuPct}% CPU right now · ${restarts === 0 ? "no crashes" : `${restarts} restart${restarts === 1 ? "" : "s"} after crashes`} in the last 24 hours.`
+            : "Sampled every minute while the app runs."
+        }
+      />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <LineChart title="CPU (% of one core)" unit="percent" now={now} points={rows.map((r) => ({ t: r.at.getTime(), v: r.cpuPct }))} />
+        <LineChart
+          title="Memory"
+          unit="bytes"
+          now={now}
+          points={rows.map((r) => ({ t: r.at.getTime(), v: r.memBytes }))}
+          reference={{ value: limit, label: `limit ${bytes(limit)}` }}
+        />
+      </div>
+    </section>
   );
 }
 
