@@ -17,12 +17,13 @@ Dockerfile/Railpack builds · Caddy admin API · Cloudflare R2 (S3 API). Package
 ## Layout
 
 - `src/app` — routes. `(main)` = pages with the top bar; `projects/[slug]` = project tabs;
-  `new` = New project; `api/` = auth, webhooks, SSE log streams, Caddy's `internal/domain-allowed`.
+  `new` = New project; `api/` = auth, webhooks, `v1` (token API for the CLI), SSE log streams, Caddy's `internal/domain-allowed`.
 - `src/components` — `ui/` primitives, `layout/` shells, `forms/ActionForm`, feature folders.
 - `src/db` — Drizzle schema, migrations, seed.
 - `src/lib` — safe anywhere (env, crypto, queue names, log format, validation, status).
 - `src/server` — server/worker code: docker, caddy, builder, git, databases, backups, queries
   (queries/session use `server-only`; the worker must not import those).
+- `cli/unstakd.mjs` — dependency-free CLI over `/api/v1` (bearer tokens from Server → API tokens); see [docs/CLI.md](docs/CLI.md).
 - `src/worker` — BullMQ worker: `deploy.ts` (pipeline), `ops.ts` (all other jobs), schedulers in `index.ts`.
 
 ## Commands

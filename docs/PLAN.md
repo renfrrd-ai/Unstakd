@@ -55,7 +55,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 - [x] Runtime metrics: CPU and memory charts (24h) and crash restarts per app (R6)
 - [x] www ↔ apex redirects to the primary domain (N3)
 - [x] SSH tunnel access for database tools: loopback-only port + instructions (B4)
-- [ ] CLI (A2)
+- [x] CLI (A2): `cli/unstakd.mjs` over a token-authed `/api/v1`; npm publish waits on the owner
 - [x] Alerts to Discord / any webhook (A3); email waits on SMTP credentials
 
 ## Definition of done for each step

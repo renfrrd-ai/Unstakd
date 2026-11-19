@@ -51,7 +51,13 @@ These couldn't be exercised on the laptop:
 Server → Alerts takes a Discord webhook URL (channel → Integrations → Webhooks) or any URL
 that accepts a JSON POST. Email alerts need an SMTP provider (e.g. Resend, Postmark): not built.
 
-## 7. Decisions from the PRD's open questions
+## 7. CLI
+Works today without publishing: `pnpm link --global` in this repo (or copy `cli/unstakd.mjs`
+anywhere on your PATH), then create a token on Server → API tokens and run
+`unstakd login https://unstakd.com`. Publishing to npm needs your npm account and the
+package name (see below).
+
+## 8. Decisions from the PRD's open questions
 - Public product later? (changes auth, isolation, billing)
 - Serve apps from a separate domain (like `pxxl.pro`) to keep app cookies off the dashboard's?
 - Is `unstakd` free on npm/GitHub (for the CLI)?
