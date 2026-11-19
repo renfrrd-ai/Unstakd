@@ -23,6 +23,11 @@ for (const [name, w] of [["ops", ops], ["deploys", deploys]] as const) {
 
 const scheduler = new Queue<OpsJob>(OPS_QUEUE, { connection: createRedis() });
 await scheduler.upsertJobScheduler("db-stats", { every: 5 * 60_000 }, { name: "db-stats", data: { kind: "db-stats" } });
+await scheduler.upsertJobScheduler(
+  "nightly-backup",
+  { pattern: process.env.BACKUP_CRON ?? "0 3 * * *", tz: process.env.TZ ?? "America/Toronto" },
+  { name: "backup", data: { kind: "backup" } },
+);
 
 console.log(`unstakd worker up (build concurrency ${concurrency})`);
 

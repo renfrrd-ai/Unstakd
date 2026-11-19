@@ -8,6 +8,14 @@ export function describeEvent(e: Pick<AuditEvent, "action" | "target" | "details
       return { text: `Backups finished for ${e.target}`, detail: `sent to ${d.destination ?? "R2"}` };
     case "backup.failed":
       return { text: `Backup failed for ${e.target}`, detail: String(d.error ?? "") };
+    case "backup.restored":
+      return { text: `${e.target} restored from a backup`, detail: d.from ? new Date(String(d.from)).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" }) : "" };
+    case "database.deleted":
+      return { text: `Database ${e.target} deleted`, detail: "" };
+    case "database.failed":
+      return { text: `Database ${e.target} failed to start`, detail: String(d.engine ?? "") };
+    case "database.revealed":
+      return { text: `Connection string for ${e.target} revealed`, detail: "" };
     case "domain.certificate":
       return { text: `Certificate issued for ${e.target}`, detail: String(d.issuer ?? "let's encrypt").toLowerCase() };
     case "domain.added":

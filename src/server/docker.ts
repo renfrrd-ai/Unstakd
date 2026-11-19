@@ -106,3 +106,33 @@ export async function waitFor(check: () => Promise<boolean>, { timeoutMs, interv
   }
   return false;
 }
+
+// Streams a command's stdout (and optionally feeds stdin). `done` resolves with the exit code
+// and the tail of stderr once the command finishes.
+export async function execStream(name: string, cmd: string[], { env = [], stdin }: { env?: string[]; stdin?: NodeJS.ReadableStream } = {}) {
+  const { PassThrough } = await import("node:stream");
+  const exec = await docker().getContainer(name).exec({ Cmd: cmd, Env: env, AttachStdout: true, AttachStderr: true, AttachStdin: !!stdin });
+  const stream = await exec.start({ hijack: true, stdin: !!stdin });
+  const stdout = new PassThrough();
+  let stderr = "";
+  const errSink = new PassThrough();
+  errSink.on("data", (c: Buffer) => (stderr = (stderr + c.toString("utf8")).slice(-4000)));
+  docker().modem.demuxStream(stream, stdout, errSink);
+  if (stdin) {
+    stdin.pipe(stream as unknown as NodeJS.WritableStream);
+    stdin.on("end", () => (stream as unknown as { end(): void }).end());
+  }
+  const done = new Promise<{ exitCode: number; stderr: string }>((resolve, reject) => {
+    stream.on("end", async () => {
+      stdout.end();
+      try {
+        const info = await exec.inspect();
+        resolve({ exitCode: info.ExitCode ?? -1, stderr });
+      } catch (e) {
+        reject(e);
+      }
+    });
+    stream.on("error", reject);
+  });
+  return { stdout, done };
+}

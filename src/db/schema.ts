@@ -156,6 +156,7 @@ export const backups = pgTable("backups", {
     .notNull()
     .references(() => databases.id, { onDelete: "cascade" }),
   objectKey: text("object_key"),
+  storage: text("storage").notNull().default("local"),
   sizeBytes: bigint("size_bytes", { mode: "number" }),
   status: backupStatus("status").notNull().default("running"),
   error: text("error"),

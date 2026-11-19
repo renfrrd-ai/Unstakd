@@ -1,0 +1,1 @@
+ALTER TABLE "backups" ADD COLUMN "storage" text DEFAULT 'local' NOT NULL;

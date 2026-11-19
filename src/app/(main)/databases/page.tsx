@@ -32,8 +32,7 @@ const engineName = (d: Pick<Database, "engine" | "version">) => `${d.engine === 
 export default function DatabasesPage({ searchParams }: PageProps<"/databases">) {
   return (
     <PageMain>
-      <PageTitle title="Databases" description="Private to your server. Backed up nightly to Cloudflare R2, kept 7 days." />
-      <Suspense fallback={<Skeleton className="h-96" />}>
+      <Suspense fallback={<><Skeleton className="h-16" /><Skeleton className="h-96" /></>}>
         <Databases searchParams={searchParams} />
       </Suspense>
     </PageMain>
@@ -44,18 +43,23 @@ type DbRow = Awaited<ReturnType<typeof listDatabases>>[number];
 
 async function Databases({ searchParams }: { searchParams: PageProps<"/databases">["searchParams"] }) {
   const [dbs, params] = await Promise.all([listDatabases(), searchParams]);
+  const header = <PageTitle title="Databases" description={`Private to your server. Backed up nightly to ${process.env.R2_BUCKET ? "Cloudflare R2" : "local disk (R2 not configured yet)"}, kept 7 days.`} />;
   if (dbs.length === 0) {
     return (
+      <>
+      {header}
       <EmptyState title="No databases yet">
         <p className="mt-0">Create Postgres or Redis with one click; it gets a persistent volume and nightly backups.</p>
         <ButtonLink href="/databases/new" variant="primary">New database</ButtonLink>
       </EmptyState>
+      </>
     );
   }
   const selected = dbs.find((d) => d.name === params.db) ?? dbs[0];
 
   return (
     <>
+      {header}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dbs.map((d) => (
           <DatabaseCard key={d.id} db={d} selected={d.id === selected.id} />
@@ -174,7 +178,7 @@ async function Detail({ db }: { db: DbRow }) {
                 <tr key={b.id} className="border-t border-border">
                   <td className="py-3">{b.createdAt.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" })}</td>
                   <td>{b.status === "done" ? bytes(b.sizeBytes) : <Pill tone={b.status === "failed" ? "err" : "warn"}>{b.status}</Pill>}</td>
-                  <td><Mono className="text-muted">{b.objectKey ? `r2://…/${b.objectKey.split("/").slice(-2).join("/")}` : "—"}</Mono></td>
+                  <td><Mono className="text-muted">{b.objectKey ? `${b.storage === "r2" ? "r2" : "local"}://…/${b.objectKey}` : "—"}</Mono></td>
                   <td className="text-right">
                     {b.status === "done" && (
                       <form action={restoreBackup.bind(null, b.id)}>
