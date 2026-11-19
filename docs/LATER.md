@@ -20,11 +20,15 @@ Not built yet, needs your GitHub App: private repos (installation tokens for clo
 repo picker in New project. Today New project takes a public `owner/name`.
 
 ## 3. The VPS
-1. Pick a provider/region (PRD open question; most visitors near Toronto). 4 vCPU / 8 GB.
+1. Decided: **OVHcloud VPS**, Beauharnois (BHS, Canada) region, Ubuntu 24.04, 4 vCPU / 8 GB.
+   Unstakd itself runs on this VPS (it needs the Docker socket); Cloudflare is DNS only.
+   Dashboard: **dash.unstakd.com** → `.env`: `APP_URL=https://dash.unstakd.com`,
+   `DASHBOARD_HOST=dash.unstakd.com`, `APPS_DOMAIN=unstakd.com`, `EDGE_HOST=edge.unstakd.com`,
+   `EDGE_IP=<VPS IPv4>`. GitHub OAuth callback: `https://dash.unstakd.com/api/auth/callback`.
 2. DNS (Cloudflare, "DNS only"/grey cloud):
    - `A  edge.unstakd.com → <VPS IP>`
    - `A  *.unstakd.com    → <VPS IP>` (or CNAME to edge)
-   - `A  <dashboard host> → <VPS IP>`
+   - `A  dash.unstakd.com → <VPS IP>` (also covered by the wildcard, but explicit is clearer)
 3. Cloudflare API token with Zone → DNS → Edit for unstakd.com → `CF_API_TOKEN` (wildcard cert).
 4. On the VPS: `sudo bash scripts/setup-vps.sh <git URL of this repo>`, fill in the `.env` it
    generates, run it again.
