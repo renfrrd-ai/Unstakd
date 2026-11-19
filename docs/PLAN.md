@@ -26,17 +26,17 @@ more commits and leaves the app runnable. Check items off as they land.
 - [x] Rename PRD, add CLAUDE.md, DESIGN.md, this plan; keep the UI template in `docs/design`.
 
 ### 1 · Scaffold and design system
-- [ ] Next.js (App Router, TS strict), Tailwind, ESLint, pnpm, `.env.example`.
-- [ ] Theme tokens, fonts, no-flash theme cookie, `ThemeToggle`.
+- [x] Next.js (App Router, TS strict), Tailwind, ESLint, pnpm, `.env.example`.
+- [x] Theme tokens, fonts, no-flash theme script, `ThemeToggle`.
 - [ ] UI primitives: Button, Pill, Panel, List, Input, Field, LogViewer, StatCard, BrandMark.
 - [ ] App shell: top bar (brand, main nav, server badge, theme toggle, avatar) and project
   header (breadcrumb, status, actions, tabs).
 
 ### 2 · Data layer
-- [ ] `docker-compose.dev.yml`: Postgres, Redis.
-- [ ] Drizzle schema for every PRD entity (Project, Deployment, EnvVar, Domain, Database,
+- [x] `docker-compose.dev.yml`: Postgres, Redis.
+- [x] Drizzle schema for every PRD entity (Project, Deployment, EnvVar, Domain, Database,
   DatabaseLink, Backup, AuditEvent) + first migration + seed script with sample data.
-- [ ] `crypto.ts` (AES-256-GCM) with tests.
+- [x] `crypto.ts` (AES-256-GCM) with tests.
 
 ### 3 · Auth
 - [ ] Auth.js GitHub provider, allowlist via `ALLOWED_GITHUB_LOGINS`, middleware guarding

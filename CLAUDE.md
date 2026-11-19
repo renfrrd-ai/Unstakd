@@ -10,7 +10,8 @@ one-click Postgres/Redis. Single user (the owner), one VPS.
 
 ## Stack
 
-Next.js App Router + TypeScript (strict) · Tailwind · Auth.js (GitHub, allowlist) ·
+Next.js 16 App Router (Cache Components on) + TypeScript (strict) · Tailwind 4 ·
+GitHub OAuth (allowlist) ·
 Postgres + Drizzle · Redis + BullMQ · Docker via dockerode · Railpack/BuildKit ·
 Caddy admin API · `registry:2` · Cloudflare R2. Package manager: **pnpm**.
 
@@ -26,14 +27,21 @@ Caddy admin API · `registry:2` · Cloudflare R2. Package manager: **pnpm**.
 ## Commands
 
 ```bash
-pnpm dev:services   # Postgres (5434) + Redis via docker compose
-pnpm db:migrate     # apply migrations;  pnpm db:seed for sample data
+cp .env.example .env.local && pnpm key:generate   # first run only
+pnpm dev:services   # Postgres (5434) + Redis (6380) via docker compose
+pnpm db:generate    # after editing src/db/schema.ts (then commit the migration)
+pnpm db:migrate     # apply migrations;  pnpm db:seed resets to sample data
 pnpm dev            # dashboard on :3000
 pnpm worker         # deploy worker
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
 ## Rules
+
+- **Next.js 16 differs from older versions** (Proxy instead of Middleware, Cache
+  Components, generated `PageProps`/`LayoutProps`). Read `node_modules/next/dist/docs/`
+  before using an API you haven't used here yet. Request-time reads (cookies, DB) go
+  inside `<Suspense>` boundaries.
 
 - **Theme**: every color comes from a token (`bg-panel`, `text-muted`, …). Never hardcode
   hex values in components. Check new UI in dark *and* light mode and at phone width.
