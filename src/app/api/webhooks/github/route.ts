@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, schema as s } from "@/db";
 import { createDeployment } from "@/server/deployments";
 import { verifySignature } from "@/server/github-webhook";
+import { queues } from "@/lib/queue";
 
 const push = z.object({
   ref: z.string(),
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
   }
   const event = request.headers.get("x-github-event");
   if (event === "ping") return Response.json({ ok: true });
+  if (event === "pull_request") return handlePullRequest(JSON.parse(body));
   if (event !== "push") return Response.json({ ignored: event }, { status: 202 });
 
   const parsed = push.safeParse(JSON.parse(body));
@@ -42,6 +44,53 @@ export async function POST(request: NextRequest) {
     if (dupe) continue;
     const d = await createDeployment(project, { trigger: "push", commitSha: head_commit.id, commitMessage: head_commit.message.split("\n")[0] });
     queued.push(`${project.slug}#${d.number}`);
+  }
+  return Response.json({ queued }, { status: 202 });
+}
+
+const pullRequest = z.object({
+  action: z.string(),
+  number: z.number().int().positive(),
+  repository: z.object({ full_name: z.string() }),
+  pull_request: z.object({
+    title: z.string(),
+    head: z.object({ sha: z.string() }),
+    base: z.object({ ref: z.string() }),
+  }),
+});
+
+async function handlePullRequest(payload: unknown) {
+  const parsed = pullRequest.safeParse(payload);
+  if (!parsed.success) return Response.json({ error: "unexpected payload" }, { status: 400 });
+  const { action, number, repository, pull_request: pr } = parsed.data;
+
+  const projects = await db()
+    .select()
+    .from(s.projects)
+    .where(
+      and(
+        sql`lower(${s.projects.repo}) = lower(${repository.full_name})`,
+        eq(s.projects.branch, pr.base.ref),
+        eq(s.projects.previewsEnabled, true),
+        eq(s.projects.state, "active"),
+      ),
+    );
+
+  if (action === "closed") {
+    for (const p of projects) await queues().ops.add("teardown-preview", { kind: "teardown-preview", projectId: p.id, pr: number });
+    return Response.json({ removed: projects.map((p) => `${p.slug} PR #${number}`) }, { status: 202 });
+  }
+  if (!["opened", "synchronize", "reopened"].includes(action)) return Response.json({ ignored: action }, { status: 202 });
+
+  const queued: string[] = [];
+  for (const project of projects) {
+    const [dupe] = await db()
+      .select({ id: s.deployments.id })
+      .from(s.deployments)
+      .where(and(eq(s.deployments.projectId, project.id), eq(s.deployments.previewPr, number), eq(s.deployments.commitSha, pr.head.sha), inArray(s.deployments.status, ["queued", "building", "deploying", "live"])));
+    if (dupe) continue;
+    const d = await createDeployment(project, { trigger: "preview", previewPr: number, commitSha: pr.head.sha, commitMessage: pr.title });
+    queued.push(`${project.slug}#${d.number} (PR #${number})`);
   }
   return Response.json({ queued }, { status: 202 });
 }

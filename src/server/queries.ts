@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Deployment, Domain, Project } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
@@ -26,7 +26,7 @@ async function summarize(projects: Project[]): Promise<ProjectSummary[]> {
     db()
       .selectDistinctOn([s.deployments.projectId])
       .from(s.deployments)
-      .where(inArray(s.deployments.projectId, ids))
+      .where(and(inArray(s.deployments.projectId, ids), isNull(s.deployments.previewPr)))
       .orderBy(s.deployments.projectId, desc(s.deployments.number)),
     db().select().from(s.domains).where(inArray(s.domains.projectId, ids)),
   ]);
@@ -63,7 +63,22 @@ export const getProject = cache(async (slug: string): Promise<ProjectSummary | n
 
 export async function listDeployments(projectId: string, limit = 20) {
   await requireUser();
-  return db().select().from(s.deployments).where(eq(s.deployments.projectId, projectId)).orderBy(desc(s.deployments.number)).limit(limit);
+  return db()
+    .select()
+    .from(s.deployments)
+    .where(and(eq(s.deployments.projectId, projectId), isNull(s.deployments.previewPr)))
+    .orderBy(desc(s.deployments.number))
+    .limit(limit);
+}
+
+export async function listPreviews(projectId: string, limit = 20) {
+  await requireUser();
+  return db()
+    .select()
+    .from(s.deployments)
+    .where(and(eq(s.deployments.projectId, projectId), isNotNull(s.deployments.previewPr)))
+    .orderBy(desc(s.deployments.number))
+    .limit(limit);
 }
 
 export async function getDeployment(projectId: string, number: number) {

@@ -3,7 +3,9 @@ import path from "node:path";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { logDir } from "@/lib/logs";
-import { caddyEnabled, ensureCaddy } from "@/server/caddy";
+import { caddyEnabled, ensureCaddy, previewRouteId, setRoute } from "@/server/caddy";
+import { previewHost } from "@/lib/domains";
+import { env } from "@/lib/env";
 import { applyRoute } from "@/server/routing";
 import { docker } from "@/server/docker";
 
@@ -62,6 +64,18 @@ export async function reconcileRoutes(log: (l: string) => void = () => {}) {
     const exists = await docker().getContainer(live.containerName).inspect().then(() => true, () => false);
     if (!exists) continue;
     await applyRoute(p, live.containerName);
+    applied++;
+  }
+  const previews = await db()
+    .select({ d: s.deployments, slug: s.projects.slug, port: s.projects.port })
+    .from(s.deployments)
+    .innerJoin(s.projects, eq(s.projects.id, s.deployments.projectId))
+    .where(and(isNotNull(s.deployments.previewPr), eq(s.deployments.status, "live")));
+  for (const { d, slug, port } of previews) {
+    if (!d.containerName || !d.previewPr) continue;
+    const exists = await docker().getContainer(d.containerName).inspect().then(() => true, () => false);
+    if (!exists) continue;
+    await setRoute(slug, [previewHost(slug, d.previewPr, env().APPS_DOMAIN)], `${d.containerName}:${port}`, null, previewRouteId(slug, d.previewPr));
     applied++;
   }
   log(`re-applied ${applied} route${applied === 1 ? "" : "s"}`);

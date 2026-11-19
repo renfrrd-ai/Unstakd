@@ -67,6 +67,8 @@ keep `BUILDKIT_HOST=tcp://127.0.0.1:1234` in `.env.local`.
 - Docker here is the snap package: its CLI can't read `/tmp` or hidden folders (`.data`), so CLI
   output into those comes back empty. The app uses the Docker API, so it's unaffected.
 - This host rejects `no-new-privileges`; `.env.local` sets `DOCKER_NO_NEW_PRIVILEGES=false`.
+- Turbopack sometimes misses edits made by scripts (stale CSS tokens, "X is not a function" for a
+  new export). Restart `pnpm dev` before debugging further. The worker never hot-reloads: restart it.
 
 ## Git
 

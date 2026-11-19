@@ -5,7 +5,7 @@ import type { OpsJob } from "@/lib/queue";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
-import { removeRoute } from "@/server/caddy";
+import { previewRouteId, removeRoute } from "@/server/caddy";
 import { applyRoute } from "@/server/routing";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
 import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
@@ -83,6 +83,19 @@ export async function handleOps(job: Job<OpsJob>) {
     case "prune":
       await prune(log);
       return;
+    case "teardown-preview": {
+      const [project] = await db().select().from(s.projects).where(eq(s.projects.id, data.projectId));
+      if (!project) return;
+      await removeRoute(project.slug, previewRouteId(project.slug, data.pr));
+      const containers = await docker().listContainers({ all: true, filters: { label: [`${LABEL}.project=${project.slug}`, `${LABEL}.preview=${data.pr}`] } });
+      for (const c of containers) await removeContainer(c.Id);
+      await db()
+        .update(s.deployments)
+        .set({ status: "superseded" })
+        .where(and(eq(s.deployments.projectId, project.id), eq(s.deployments.previewPr, data.pr), eq(s.deployments.status, "live")));
+      await audit("preview.removed", project.name, { pr: data.pr });
+      return;
+    }
     case "domain-check":
       await checkDomains(log);
       return;

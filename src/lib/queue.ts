@@ -12,6 +12,7 @@ export type OpsJob =
   | { kind: "db-stats" }
   | { kind: "app-stats" }
   | { kind: "stop-container"; containerName: string }
+  | { kind: "teardown-preview"; projectId: string; pr: number }
   | { kind: "provision-db"; databaseId: string; recreate?: boolean }
   | { kind: "restore"; backupId: string }
   | { kind: "standby"; projectId: string }

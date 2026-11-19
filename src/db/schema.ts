@@ -33,7 +33,7 @@ export const deploymentStatus = pgEnum("deployment_status", [
   "superseded",
   "cancelled",
 ]);
-export const deploymentTrigger = pgEnum("deployment_trigger", ["create", "push", "manual", "rollback"]);
+export const deploymentTrigger = pgEnum("deployment_trigger", ["create", "push", "manual", "rollback", "preview"]);
 export const domainStatus = pgEnum("domain_status", ["pending", "verified", "active", "misconfigured"]);
 export const dbEngine = pgEnum("db_engine", ["postgres", "redis"]);
 export const dbStatus = pgEnum("db_status", ["provisioning", "running", "stopped", "failed"]);
@@ -53,6 +53,7 @@ export const projects = pgTable("projects", {
   cpuLimit: real("cpu_limit").notNull().default(1),
   memoryMb: integer("memory_mb").notNull().default(512),
   state: projectState("state").notNull().default("active"),
+  previewsEnabled: boolean("previews_enabled").notNull().default(false),
   liveDeploymentId: uuid("live_deployment_id"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -82,6 +83,8 @@ export const deployments = pgTable(
     imageTag: text("image_tag"),
     containerName: text("container_name"),
     rollbackOf: uuid("rollback_of"),
+    // Set for pull-request previews; those never touch the project's live deploy or route.
+    previewPr: integer("preview_pr"),
     steps: jsonb("steps").$type<DeployStep[]>().notNull().default(sql`'[]'::jsonb`),
     error: text("error"),
     notified: text("notified"),

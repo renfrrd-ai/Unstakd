@@ -13,7 +13,8 @@ Until this is set, only the local "Continue as dev user" button works (and only 
 ## 2. Push-to-deploy
 Works today with a plain repo webhook:
 - Repo → Settings → Webhooks → Add: URL `https://<dashboard host>/api/webhooks/github`,
-  content type JSON, secret = `GITHUB_WEBHOOK_SECRET`, event "Just the push event".
+  content type JSON, secret = `GITHUB_WEBHOOK_SECRET`, events: **Pushes** and **Pull requests**
+  (the second only matters if you turn on preview deploys in a project's Settings).
 
 Not built yet, needs your GitHub App: private repos (installation tokens for cloning) and the
 repo picker in New project. Today New project takes a public `owner/name`.

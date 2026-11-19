@@ -8,3 +8,7 @@ export function publicUrl(host: string) {
   const port = process.env.APPS_PUBLIC_PORT;
   return `${https ? "https" : "http"}://${host}${port && port !== (https ? "443" : "80") ? `:${port}` : ""}`;
 }
+
+export function previewHost(slug: string, pr: number, appsDomain: string) {
+  return `pr-${pr}-${slug}.${appsDomain}`;
+}

@@ -10,6 +10,7 @@ type NewDeploy = {
   commitSha?: string | null;
   commitMessage?: string | null;
   rollbackOf?: Deployment;
+  previewPr?: number;
 };
 
 export async function createDeployment(project: Project, opts: NewDeploy): Promise<Deployment> {
@@ -33,6 +34,7 @@ export async function createDeployment(project: Project, opts: NewDeploy): Promi
         commitMessage: opts.rollbackOf ? `rollback to #${opts.rollbackOf.number}` : (opts.commitMessage ?? null),
         imageTag: opts.rollbackOf?.imageTag ?? null,
         rollbackOf: opts.rollbackOf?.id ?? null,
+        previewPr: opts.previewPr ?? null,
       })
       .returning();
     return row;

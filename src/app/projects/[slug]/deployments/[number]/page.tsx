@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Deployment } from "@/db/schema";
 import { duration, shortSha, timeAgo } from "@/lib/format";
 import { readLog } from "@/lib/logs";
+import { previewHost, publicUrl } from "@/lib/domains";
+import { env } from "@/lib/env";
 import { deploymentLabel, isInProgress, toneText } from "@/lib/status";
 import { loadProject } from "@/server/load-project";
 import { getDeployment } from "@/server/queries";
@@ -46,7 +48,7 @@ async function Detail({ params }: { params: Props["params"] }) {
   const running = isInProgress(d);
   const lines = running ? [] : await readLog(d.id);
   const total = d.finishedAt && d.startedAt ? d.finishedAt.getTime() - d.startedAt.getTime() : null;
-  const isLive = d.id === project.liveDeploymentId;
+  const isLive = d.id === project.liveDeploymentId || (!!d.previewPr && d.status === "live");
   const tone = isLive ? "text-accent-text" : toneText[deploymentLabel[d.status].tone];
 
   return (
@@ -66,7 +68,14 @@ async function Detail({ params }: { params: Props["params"] }) {
             {total != null && <span>total {duration(total)}</span>}
           </div>
         </div>
-        <SideCard d={d} running={running} isLive={isLive} slug={project.slug} liveNumber={project.live?.number} host={project.primaryHost} />
+        <SideCard
+          d={d}
+          running={running}
+          isLive={isLive}
+          slug={project.slug}
+          liveNumber={d.previewPr ? undefined : project.live?.number}
+          host={d.previewPr ? previewHost(project.slug, d.previewPr, env().APPS_DOMAIN) : project.primaryHost}
+        />
       </div>
 
       <StepTrack steps={d.steps} />
@@ -86,7 +95,7 @@ async function Detail({ params }: { params: Props["params"] }) {
           <InfoCard title="Notified">{d.notified}.</InfoCard>
         ) : (
         <InfoCard title="Trigger">
-          {d.trigger === "rollback" ? "Rollback (reused an existing image, no rebuild)" : d.trigger === "push" ? `Push to ${d.branch}` : d.trigger === "create" ? "First deploy" : "Manual redeploy"}
+          {d.previewPr ? `Pull request #${d.previewPr} (preview; the live deploy is untouched)` : d.trigger === "rollback" ? "Rollback (reused an existing image, no rebuild)" : d.trigger === "push" ? `Push to ${d.branch}` : d.trigger === "create" ? "First deploy" : "Manual redeploy"}
         </InfoCard>
         )}
         <InfoCard title="Image">
@@ -121,7 +130,10 @@ function SideCard({ d, running, isLive, slug, liveNumber, host }: { d: Deploymen
     return (
       <Panel className="flex flex-[0_1_360px] flex-col gap-1.5 px-4.5 py-4">
         <span className="font-mono text-xs font-bold text-accent-text">● SERVING</span>
-        <span className="leading-normal">This deploy is live at {host}.</span>
+        <span className="leading-normal">
+          {d.previewPr ? "Preview" : "This deploy"} is live at{" "}
+          <a href={publicUrl(host)} target="_blank" rel="noreferrer" className="text-accent-text hover:underline">{host}</a>.
+        </span>
       </Panel>
     );
   }

@@ -7,7 +7,9 @@ import { Panel, SectionHeader } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SIZES, sizeOf } from "@/lib/validation";
 import { loadProject } from "@/server/load-project";
-import { deleteProject, setStandby, updateSettings } from "./actions";
+import { deleteProject, setPreviews, setStandby, updateSettings } from "./actions";
+import { previewHost } from "@/lib/domains";
+import { env } from "@/lib/env";
 
 type Props = PageProps<"/projects/[slug]/settings">;
 
@@ -50,6 +52,20 @@ async function Settings({ params }: { params: Props["params"] }) {
               <SubmitButton pendingLabel="Saving…" variant="primary" className="self-start">Save settings</SubmitButton>
             </>
         </ActionForm>
+      </Panel>
+
+      <Panel className="flex flex-wrap items-center justify-between gap-4 p-5">
+        <div className="max-w-2xl">
+          <h2 className="m-0 text-[15px] font-semibold">Preview deploys {p.previewsEnabled ? "are on" : ""}</h2>
+          <p className="mt-1 mb-0 text-muted">
+            Every pull request into <span className="font-mono text-text">{p.branch}</span> gets its own copy at{" "}
+            <span className="font-mono text-text">{previewHost(p.slug, 12, env().APPS_DOMAIN).replace("pr-12-", "pr-<n>-")}</span>, removed when the PR closes. Needs the repo webhook to send
+            &ldquo;Pull requests&rdquo; events too. Previews share this project&apos;s environment and databases.
+          </p>
+        </div>
+        <form action={setPreviews.bind(null, p.slug, !p.previewsEnabled)}>
+          <Button type="submit">{p.previewsEnabled ? "Turn off" : "Turn on"}</Button>
+        </form>
       </Panel>
 
       <Panel className="flex flex-wrap items-center justify-between gap-4 p-5">

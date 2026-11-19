@@ -44,3 +44,10 @@ export async function deleteProject(slug: string, _prev: FormState, data: FormDa
   await audit("project.deleted", project.name);
   redirect("/");
 }
+
+export async function setPreviews(slug: string, enabled: boolean) {
+  const project = await projectFor(slug);
+  await db().update(s.projects).set({ previewsEnabled: enabled }).where(eq(s.projects.id, project.id));
+  await audit("project.settings", project.name, { fields: enabled ? "preview deploys on" : "preview deploys off" });
+  done("ok");
+}

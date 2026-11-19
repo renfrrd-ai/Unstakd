@@ -50,6 +50,20 @@
       "when": 1795100056153,
       "tag": "0006_database_local_port",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795100269064,
+      "tag": "0007_previews",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795100298057,
+      "tag": "0008_preview_trigger",
+      "breakpoints": true
     }
   ]
 }

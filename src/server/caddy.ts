@@ -92,11 +92,13 @@ export async function ensureCaddy() {
   throw new Error("caddy did not accept the base config");
 }
 
-export async function setRoute(slug: string, hosts: string[], dial: string, redirect?: { from: string[]; to: string } | null) {
+export const previewRouteId = (slug: string, pr: number) => `preview-${slug}-${pr}`;
+
+export async function setRoute(slug: string, hosts: string[], dial: string, redirect?: { from: string[]; to: string } | null, id = routeId(slug)) {
   await ensureCaddy();
   const proxy = { handler: "reverse_proxy", upstreams: [{ dial }] };
   const route = {
-    "@id": routeId(slug),
+    "@id": id,
     match: [{ host: [...hosts, ...(redirect?.from ?? [])] }],
     handle: redirect
       ? [
@@ -114,14 +116,14 @@ export async function setRoute(slug: string, hosts: string[], dial: string, redi
       : [proxy],
     terminal: true,
   };
-  const replace = await api("PATCH", `/id/${routeId(slug)}`, route);
+  const replace = await api("PATCH", `/id/${id}`, route);
   if (replace.ok) return;
   const add = await api("POST", `/config/apps/http/servers/${SERVER}/routes`, route);
   if (!add.ok) throw new Error(`caddy route update failed: ${add.status} ${await add.text()}`);
 }
 
-export async function removeRoute(slug: string) {
-  const res = await api("DELETE", `/id/${routeId(slug)}`);
+export async function removeRoute(slug: string, id = routeId(slug)) {
+  const res = await api("DELETE", `/id/${id}`);
   if (!res.ok && res.status !== 404 && !(await res.text()).includes("unknown object ID")) {
     throw new Error(`caddy route delete failed: ${res.status}`);
   }

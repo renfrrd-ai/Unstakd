@@ -50,7 +50,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 - [ ] VPS, DNS, Cloudflare token, R2 bucket; first production run
 
 ### v1.1 (from the PRD)
-- [ ] Preview deploys per PR (D8)
+- [x] Preview deploys per pull request at pr-<n>-<app>, removed on close (D8)
 - [ ] Static-site mode (D9)
 - [x] Runtime metrics: CPU and memory charts (24h) and crash restarts per app (R6)
 - [x] www ↔ apex redirects to the primary domain (N3)

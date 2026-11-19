@@ -42,6 +42,10 @@ export function describeEvent(e: Pick<AuditEvent, "action" | "target" | "details
       return { text: `Environment changed for ${e.target}`, detail: String(d.keys ?? "") };
     case "deploy.live":
       return { text: `${e.target} #${d.number} is live`, detail: String(d.sha ?? "") };
+    case "preview.live":
+      return { text: `${e.target} preview for PR #${d.pr} is live`, detail: `#${d.number}` };
+    case "preview.removed":
+      return { text: `${e.target} preview for PR #${d.pr} removed`, detail: "PR closed" };
     case "deploy.failed":
       return { text: `${e.target} #${d.number} failed`, detail: String(d.step ?? "") };
     case "deploy.rollback":

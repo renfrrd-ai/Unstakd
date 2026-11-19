@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Deployment, DeployStep, Project } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
-import { defaultHost } from "@/lib/domains";
+import { defaultHost, previewHost } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { cancelKey, queues } from "@/lib/queue";
 import { createRedis, redis } from "@/lib/redis";
@@ -13,7 +13,7 @@ import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { readLog } from "@/lib/logs";
 import { buildDockerfile, buildRailpack, detect } from "@/server/builder";
-import { caddyEnabled } from "@/server/caddy";
+import { caddyEnabled, previewRouteId, setRoute } from "@/server/caddy";
 import { applyRoute } from "@/server/routing";
 import { connectionUrl } from "@/server/db-connection";
 import { containerState, docker, ensureNetwork, imageExists, LABEL, NETWORK, removeContainer, securityOpts } from "@/server/docker";
@@ -25,7 +25,7 @@ const GRACE_MS = Number(process.env.SWITCH_GRACE_SECONDS ?? 30) * 1000;
 
 class Cancelled extends Error {}
 
-export const appContainerName = (slug: string, n: number) => `app-${slug}-${n}`;
+export const appContainerName = (slug: string, n: number, pr?: number | null) => (pr ? `app-${slug}-pr${pr}-${n}` : `app-${slug}-${n}`);
 export const imageTagFor = (slug: string, sha: string, n: number) => `unstakd/${slug}:${sha.slice(0, 12)}-${n}`;
 
 export async function runDeploy(deploymentId: string) {
@@ -76,7 +76,8 @@ export async function runDeploy(deploymentId: string) {
   };
 
   const workdir = await mkdtemp(path.join(os.tmpdir(), "unstakd-build-"));
-  const containerName = appContainerName(project.slug, d.number);
+  const pr = d.previewPr;
+  const containerName = appContainerName(project.slug, d.number, pr);
   let imageTag = d.imageTag;
 
   try {
@@ -89,8 +90,8 @@ export async function runDeploy(deploymentId: string) {
     } else {
       const src = path.join(workdir, "src");
       const commit = await step("clone", async () => {
-        log.step(`clone  github.com/${project.repo} @ ${project.branch}`);
-        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, onLine: log.info });
+        log.step(`clone  github.com/${project.repo} @ ${pr ? `pull request #${pr}` : project.branch}`);
+        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, pr, onLine: log.info });
         log.info(`checked out ${c.sha.slice(0, 7)} ${c.message}`);
         return c;
       });
@@ -146,6 +147,7 @@ export async function runDeploy(deploymentId: string) {
           [`${LABEL}.kind`]: "app",
           [`${LABEL}.project`]: project.slug,
           [`${LABEL}.deployment`]: String(d.number),
+          ...(pr ? { [`${LABEL}.preview`]: String(pr) } : {}),
         },
         HostConfig: {
           NetworkMode: NETWORK(),
@@ -172,12 +174,24 @@ export async function runDeploy(deploymentId: string) {
     }
 
     // 6: point the proxy at the new container, then retire the old one after a grace period.
-    const [previous] = project.liveDeploymentId
-      ? await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId))
-      : [];
+    // A preview replaces only the previous preview of the same PR; the live deploy is untouched.
+    const [previous] = pr
+      ? await db()
+          .select()
+          .from(s.deployments)
+          .where(and(eq(s.deployments.projectId, project.id), eq(s.deployments.previewPr, pr), eq(s.deployments.status, "live")))
+      : project.liveDeploymentId
+        ? await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId))
+        : [];
     await step("switch", async () => {
       if (!caddyEnabled()) {
         log.warn("switch  no proxy configured (CADDY_ADMIN_URL unset); container is running but not routed");
+        return;
+      }
+      if (pr) {
+        const host = previewHost(project.slug, pr, env().APPS_DOMAIN);
+        await setRoute(project.slug, [host], `${containerName}:${project.port}`, null, previewRouteId(project.slug, pr));
+        log.step(`switch  preview route → ${containerName}:${project.port} for ${host}`);
         return;
       }
       const plan = await applyRoute(project, containerName);
@@ -188,19 +202,25 @@ export async function runDeploy(deploymentId: string) {
     await db().transaction(async (tx) => {
       if (previous) await tx.update(s.deployments).set({ status: "superseded" }).where(eq(s.deployments.id, previous.id));
       await tx.update(s.deployments).set({ status: "live", finishedAt: new Date(), steps }).where(eq(s.deployments.id, d.id));
-      await tx.update(s.projects).set({ liveDeploymentId: d.id }).where(eq(s.projects.id, project.id));
+      if (!pr) await tx.update(s.projects).set({ liveDeploymentId: d.id }).where(eq(s.projects.id, project.id));
     });
     if (previous?.containerName && previous.containerName !== containerName) {
-      await queues().ops.add("stop-container", { kind: "stop-container", containerName: previous.containerName }, { delay: GRACE_MS });
-      log.info(`previous container ${previous.containerName} stops in ${GRACE_MS / 1000}s`);
+      const grace = pr ? 5_000 : GRACE_MS;
+      await queues().ops.add("stop-container", { kind: "stop-container", containerName: previous.containerName }, { delay: grace });
+      log.info(`previous container ${previous.containerName} stops in ${grace / 1000}s`);
     }
-    log.step(`live  #${d.number} is serving ${defaultHost(project.slug, env().APPS_DOMAIN)}`);
-    await audit("deploy.live", project.name, { number: d.number, sha: d.commitSha?.slice(0, 7) });
+    if (pr) {
+      log.step(`live  preview of PR #${pr} at ${previewHost(project.slug, pr, env().APPS_DOMAIN)}`);
+      await audit("preview.live", project.name, { number: d.number, pr });
+    } else {
+      log.step(`live  #${d.number} is serving ${defaultHost(project.slug, env().APPS_DOMAIN)}`);
+      await audit("deploy.live", project.name, { number: d.number, sha: d.commitSha?.slice(0, 7) });
+    }
   } catch (e) {
     const cancelled = e instanceof Cancelled || abort.signal.aborted;
     for (const st of steps) if (st.status === "pending") st.status = "skipped";
     log.err(cancelled ? "deploy cancelled" : (e as Error).message);
-    log.info(project.liveDeploymentId ? "traffic stays on the previous deploy" : "nothing was live before this deploy");
+    log.info(pr ? "the previous preview (if any) keeps serving" : project.liveDeploymentId ? "traffic stays on the previous deploy" : "nothing was live before this deploy");
     await removeContainer(containerName).catch(() => {});
     await save({ status: cancelled ? "cancelled" : "failed", finishedAt: new Date(), error: cancelled ? null : (e as Error).message.slice(0, 500) });
     if (!cancelled) {
@@ -210,7 +230,7 @@ export async function runDeploy(deploymentId: string) {
       const tail = (await readLog(d.id)).slice(-40).map((l) => l.text);
       const sent = await notify({
         level: "error",
-        title: `✕ ${project.name} #${d.number} failed${failedStep ? ` at ${failedStep}` : ""}`,
+        title: `✕ ${project.name} ${pr ? `preview for PR #${pr}` : `#${d.number}`} failed${failedStep ? ` at ${failedStep}` : ""}`,
         body: `${(e as Error).message}\n${project.liveDeploymentId ? "The previous deploy is still serving." : "Nothing was live before this deploy."}`,
         url: `${env().APP_URL}/projects/${project.slug}/deployments/${d.number}`,
         logTail: tail,
