@@ -5,6 +5,7 @@ import { db, schema as s } from "@/db";
 import { createDeployment } from "@/server/deployments";
 import { verifySignature } from "@/server/github-webhook";
 import { queues } from "@/lib/queue";
+import { redis } from "@/lib/redis";
 
 const push = z.object({
   ref: z.string(),
@@ -12,6 +13,12 @@ const push = z.object({
   repository: z.object({ full_name: z.string() }),
   head_commit: z.object({ id: z.string(), message: z.string() }).nullable(),
 });
+
+// A repo webhook and the GitHub App can both deliver the same push at nearly the same moment;
+// the first to claim the (project, commit) pair builds it.
+async function claim(key: string) {
+  return (await redis().set(`webhook:${key}`, "1", "EX", 600, "NX")) === "OK";
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -36,6 +43,7 @@ export async function POST(request: NextRequest) {
 
   const queued: string[] = [];
   for (const project of projects) {
+    if (!(await claim(`${project.id}:${head_commit.id}`))) continue;
     // GitHub retries deliveries; don't build the same commit twice.
     const [dupe] = await db()
       .select({ id: s.deployments.id })
@@ -84,6 +92,7 @@ async function handlePullRequest(payload: unknown) {
 
   const queued: string[] = [];
   for (const project of projects) {
+    if (!(await claim(`${project.id}:pr${number}:${pr.head.sha}`))) continue;
     const [dupe] = await db()
       .select({ id: s.deployments.id })
       .from(s.deployments)
