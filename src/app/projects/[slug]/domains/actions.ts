@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { normalizeHostname } from "@/lib/dns";
-import { defaultHost } from "@/lib/domains";
+import { customDomainError, defaultHost } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { queues } from "@/lib/queue";
 import type { FormState } from "@/lib/validation";
@@ -14,8 +14,8 @@ export async function addDomain(slug: string, _prev: FormState, data: FormData):
   const project = await projectFor(slug);
   const hostname = normalizeHostname(String(data.get("hostname") ?? ""));
   if (!hostname) return { error: "Enter a hostname like photos.example.com" };
-  const apps = env().APPS_DOMAIN;
-  if (hostname === apps || hostname.endsWith(`.${apps}`)) return { error: `${apps} subdomains are assigned automatically` };
+  const invalid = customDomainError(hostname, env().APPS_DOMAIN);
+  if (invalid) return { error: invalid };
 
   const [existing] = await db().select({ id: s.domains.id }).from(s.domains).where(eq(s.domains.hostname, hostname));
   if (existing) return { error: `${hostname} is already added to a project` };
