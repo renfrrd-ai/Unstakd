@@ -35,6 +35,7 @@ export default function ServerPage() {
 }
 
 async function Stats() {
+  await requireUser();
   const [host, deploys] = await Promise.all([hostStats(), deployStats()]);
   const fmt = (n: number) => (n < 10 ? n.toFixed(1) : Math.round(n).toString());
   return (
@@ -56,6 +57,7 @@ function mask(url: string) {
 }
 
 async function Alerts() {
+  await requireUser();
   const [discord, webhook] = await Promise.all([getSetting("alerts.discordWebhook"), getSetting("alerts.webhook")]);
   const targets = [
     { key: "alerts.discordWebhook" as const, label: "Discord", value: discord },

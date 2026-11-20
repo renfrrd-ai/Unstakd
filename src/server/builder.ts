@@ -50,8 +50,8 @@ export function runScript(dir: string) {
 // Static when a known generator builds the site and nothing needs a server, or it's plain HTML.
 function nextStaticExport(dir: string) {
   for (const name of ["next.config.ts", "next.config.mjs", "next.config.js", "next.config.cjs"]) {
-    const file = path.join(dir, name);
-    if (existsSync(file)) return /\boutput\s*:\s*["'`]export["'`]/.test(readFileSync(file, "utf8"));
+    const file = path.join(/*turbopackIgnore: true*/ dir, name);
+    if (existsSync(/*turbopackIgnore: true*/ file)) return /\boutput\s*:\s*["'`]export["'`]/.test(readFileSync(/*turbopackIgnore: true*/ file, "utf8"));
   }
   return false;
 }
