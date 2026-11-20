@@ -23,7 +23,7 @@ async function api(method: string, path: string, body?: unknown) {
   }
 }
 
-function baseConfig() {
+export function baseConfig() {
   const https = process.env.CADDY_HTTPS === "true";
   const apps = process.env.APPS_DOMAIN ?? "localhost";
   const wildcard = https && !!process.env.CF_API_TOKEN;
@@ -40,8 +40,8 @@ function baseConfig() {
     listen: https ? [":443", ":80"] : [":80"],
     routes,
   };
+  // With HTTPS on, Caddy (2.10+) already serves subdomains from the managed *.<apps domain> cert.
   if (!https) server.automatic_https = { disable: true };
-  else if (wildcard) server.automatic_https = { prefer_wildcard: true };
   const config: Record<string, unknown> = {
     // Keep our own access: Caddy checks the Host header against `origins` on non-loopback listeners.
     admin: {
