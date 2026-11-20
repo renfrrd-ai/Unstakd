@@ -19,6 +19,7 @@ import { buildStatic, checkSite, isSiteRef, siteExists, siteKey, staticPlan } fr
 import { connectionUrl } from "@/server/db-connection";
 import { containerState, docker, ensureNetwork, imageExists, LABEL, NETWORK, removeContainer, securityOpts } from "@/server/docker";
 import { cloneRepo } from "@/server/git";
+import { tokenForRepo } from "@/server/github-app";
 import { DeployLogger } from "./logger";
 
 const HEALTH_TIMEOUT_MS = Number(process.env.HEALTH_TIMEOUT_SECONDS ?? 60) * 1000;
@@ -186,7 +187,14 @@ export async function runDeploy(deploymentId: string) {
       const src = path.join(workdir, "src");
       const commit = await step("clone", async () => {
         log.step(`clone  github.com/${project.repo} @ ${pr ? `pull request #${pr}` : project.branch}`);
-        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, pr, onLine: log.info });
+        const token = await tokenForRepo(project.repo).catch((e: Error) => {
+          log.warn(`GitHub App token unavailable (${e.message}); trying without it`);
+          return null;
+        });
+        if (token) log.info("using the Unstakd GitHub App to clone");
+        const c = await cloneRepo(project.repo, project.branch, src, { sha: d.commitSha, pr, token: token ?? undefined, onLine: log.info }).catch((e: Error) => {
+          throw token ? e : new Error(`${e.message}. If the repo is private, install the Unstakd GitHub App on it (Server → GitHub App).`);
+        });
         log.info(`checked out ${c.sha.slice(0, 7)} ${c.message}`);
         return c;
       });

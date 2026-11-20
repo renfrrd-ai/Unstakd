@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { REPO } from "@/lib/validation";
 import { detect, type Detected } from "./builder";
 import { cloneRepo } from "./git";
+import { tokenForRepo } from "./github-app";
 
 const run = promisify(execFile);
 
@@ -23,13 +24,14 @@ export function parseRepo(input: string): string | null {
 }
 
 export async function inspectRepo(repo: string, token?: string): Promise<RepoInfo> {
+  token ??= (await tokenForRepo(repo).catch(() => null)) ?? undefined;
   const url = token ? `https://x-access-token:${token}@github.com/${repo}.git` : `https://github.com/${repo}.git`;
   let defaultBranch = "main";
   try {
     const { stdout } = await run("git", ["ls-remote", "--symref", "--", url, "HEAD"], { env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: 20_000 });
     defaultBranch = /ref: refs\/heads\/(\S+)\s+HEAD/.exec(stdout)?.[1] ?? defaultBranch;
   } catch {
-    throw new Error(`Couldn't reach github.com/${repo}. Check the name; private repos need the Unstakd GitHub App.`);
+    throw new Error(`Couldn't reach github.com/${repo}. Check the name; for a private repo, install the Unstakd GitHub App on it (Server → GitHub App).`);
   }
   const dir = await mkdtemp(path.join(os.tmpdir(), "unstakd-inspect-"));
   try {

@@ -29,6 +29,8 @@ export async function cloneRepo(repo: string, branch: string, dir: string, opts:
       await run("git", ["-C", dir, "checkout", "--detach", opts.sha]);
     }
   }
+  // Don't leave the installation token in .git/config, where a build step could read it.
+  if (opts.token) await run("git", ["-C", dir, "remote", "set-url", "origin", `https://github.com/${repo}.git`]);
   const sha = (await run("git", ["-C", dir, "rev-parse", "HEAD"])).stdout.trim();
   const message = (await run("git", ["-C", dir, "log", "-1", "--format=%s"])).stdout.trim();
   return { sha, message };
