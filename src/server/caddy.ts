@@ -72,11 +72,36 @@ export function baseConfig() {
   return config;
 }
 
-// Loads our base config if Caddy doesn't have the unstakd server yet (fresh start or reboot).
-export async function ensureCaddy() {
-  const res = await api("GET", `/config/apps/http/servers/${SERVER}`);
+// Caddy returns its config with sorted keys, so compare canonical JSON.
+function canonical(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (v && typeof v === "object") return Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical((v as Record<string, unknown>)[k])]));
+  return v;
+}
+
+// The parts of the config that come from env (not the per-project routes).
+function baseParts(config: unknown) {
+  const c = config as { apps?: { tls?: unknown; http?: { servers?: Record<string, { listen?: unknown; automatic_https?: unknown; routes?: { "@id"?: string }[] }> } } } | null;
+  const server = c?.apps?.http?.servers?.[SERVER];
+  return JSON.stringify(
+    canonical({
+      tls: c?.apps?.tls ?? null,
+      listen: server?.listen ?? null,
+      automaticHttps: server?.automatic_https ?? null,
+      dashboard: server?.routes?.find((r) => r["@id"] === "dashboard") ?? null,
+    }),
+  );
+}
+
+/**
+ * Loads our base config if Caddy doesn't have the unstakd server yet (fresh start or reboot).
+ * With `refresh`, also reloads it when the env-derived parts changed (domain, HTTPS, dashboard
+ * host); that drops project routes, so callers must re-apply them. Returns true if it loaded.
+ */
+export async function ensureCaddy({ refresh = false } = {}) {
+  const res = await api("GET", refresh ? "/config/" : `/config/apps/http/servers/${SERVER}`);
   const current = res.ok ? await res.json() : null;
-  if (current) return;
+  if (current && (!refresh || baseParts(current) === baseParts(baseConfig()))) return false;
   // Loading a config that changes the admin listener can drop this very connection, so confirm by re-reading.
   try {
     const load = await api("POST", "/load", baseConfig());
@@ -86,7 +111,7 @@ export async function ensureCaddy() {
   }
   for (let i = 0; i < 20; i++) {
     const check = await api("GET", `/config/apps/http/servers/${SERVER}`).catch(() => null);
-    if (check?.ok && (await check.json())) return;
+    if (check?.ok && (await check.json())) return true;
     await new Promise((r) => setTimeout(r, 250));
   }
   throw new Error("caddy did not accept the base config");

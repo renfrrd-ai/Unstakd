@@ -61,10 +61,10 @@ export async function prune(log: (l: string) => void = () => {}) {
   log(`pruned ${removedImages} images, ${removedSites} static site versions and ${removedLogs} build logs`);
 }
 
-// After a reboot or proxy reset, re-apply every live project's route.
+// After a reboot, proxy reset or env change, re-apply every live project's route.
 export async function reconcileRoutes(log: (l: string) => void = () => {}) {
   if (!caddyEnabled()) return;
-  await ensureCaddy();
+  if (await ensureCaddy({ refresh: true })) log("loaded the base proxy config");
   const projects = await db().select().from(s.projects).where(and(isNotNull(s.projects.liveDeploymentId), eq(s.projects.state, "active")));
   let applied = 0;
   for (const p of projects) {
