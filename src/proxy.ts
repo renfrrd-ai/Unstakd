@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { appUrl } from "@/lib/env";
 import { readSession, SESSION_COOKIE } from "@/server/session";
 
 // Webhooks verify their own signatures; internal endpoints are only reachable from Caddy/localhost.
@@ -15,7 +16,7 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const url = new URL("/login", request.url);
+  const url = appUrl("/login", request);
   if (pathname !== "/") url.searchParams.set("next", pathname);
   return NextResponse.redirect(url);
 }

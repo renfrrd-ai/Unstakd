@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest, connection } from "next/server";
 import { z } from "zod";
-import { env } from "@/lib/env";
+import { appUrl, env } from "@/lib/env";
 import { parseState, safeNext, STATE_COOKIE } from "@/server/oauth";
 import { isAllowed, sealSession, SESSION_COOKIE, sessionCookieOptions } from "@/server/session";
 
@@ -9,7 +9,7 @@ const token = z.object({ access_token: z.string() });
 const ghUser = z.object({ login: z.string(), name: z.string().nullable(), avatar_url: z.string().nullable() });
 
 function fail(request: NextRequest, reason: string) {
-  const res = NextResponse.redirect(new URL(`/login?error=${reason}`, request.url));
+  const res = NextResponse.redirect(appUrl(`/login?error=${reason}`, request));
   res.cookies.delete({ name: STATE_COOKIE, path: "/api/auth" });
   return res;
 }
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   if (!user.success) return fail(request, "github");
   if (!isAllowed(user.data.login)) return fail(request, "not_allowed");
 
-  const res = NextResponse.redirect(new URL(safeNext(saved.next), request.url));
+  const res = NextResponse.redirect(appUrl(safeNext(saved.next), request));
   res.cookies.delete({ name: STATE_COOKIE, path: "/api/auth" });
   res.cookies.set(
     SESSION_COOKIE,

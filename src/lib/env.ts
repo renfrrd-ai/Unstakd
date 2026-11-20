@@ -26,3 +26,9 @@ export function env(): Env {
   cached ??= schema.parse(process.env);
   return cached;
 }
+
+// Absolute URL on the dashboard. Behind Caddy in Docker, request.url carries the container's
+// hostname (e.g. https://0c775ef51da4:3000), so redirects must use APP_URL.
+export function appUrl(path: string, request: { url: string }) {
+  return new URL(path, env().APP_URL || request.url);
+}
