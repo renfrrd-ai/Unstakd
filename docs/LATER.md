@@ -10,14 +10,23 @@ Until this is set, only the local "Continue as dev user" button works (and only 
 2. Callback URL: `https://<dashboard host>/api/auth/callback` (for local: `http://localhost:3000/api/auth/callback`).
 3. Put `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` and `ALLOWED_GITHUB_LOGINS=<your login>` in `.env`.
 
-## 2. Push-to-deploy
-Works today with a plain repo webhook:
-- Repo → Settings → Webhooks → Add: URL `https://<dashboard host>/api/webhooks/github`,
-  content type JSON, secret = `GITHUB_WEBHOOK_SECRET`, events: **Pushes** and **Pull requests**
-  (the second only matters if you turn on preview deploys in a project's Settings).
+## 2. Push-to-deploy and private repos (GitHub App)
+Built; needs the App created on GitHub. Without it, public repos still work and push-to-deploy
+needs a webhook per repo (Settings → Webhooks: URL `https://dash.unstakd.com/api/webhooks/github`,
+JSON, secret = `GITHUB_WEBHOOK_SECRET`, push events).
 
-Not built yet, needs your GitHub App: private repos (installation tokens for cloning) and the
-repo picker in New project. Today New project takes a public `owner/name`.
+1. GitHub → Settings → Developer settings → GitHub Apps → New GitHub App:
+   - Homepage `https://unstakd.com`; Setup URL `https://dash.unstakd.com/api/github/setup`
+     (tick "Redirect on update"); no callback URL needed.
+   - Webhook active, URL `https://dash.unstakd.com/api/webhooks/github`, secret = the same
+     `GITHUB_WEBHOOK_SECRET` as in `.env`.
+   - Repository permissions: Contents read-only, Metadata read-only, Pull requests read-only.
+   - Events: Push, Pull request. Installable on: any account (so it can go on organisations).
+2. Note the App ID, generate a private key (.pem), install the App on your account/orgs.
+3. On the VPS: copy the .pem to `/var/lib/unstakd/github-app.pem` (`chmod 600`), set
+   `GITHUB_APP_ID=<id>` and `GITHUB_APP_KEY_FILE=/var/lib/unstakd/github-app.pem`, restart.
+4. Server → GitHub App should say Connected. Remove per-repo webhooks afterwards (duplicates are
+   ignored either way).
 
 ## 3. The VPS
 1. Decided: **OVHcloud VPS**, Beauharnois (BHS, Canada) region, Ubuntu 24.04, 4 vCPU / 8 GB.

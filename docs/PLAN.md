@@ -46,8 +46,10 @@ Verified locally: zero-downtime redeploy (400/400 requests OK), failed health ch
 version serving, rollback live in 2s, backup→damage→restore for Postgres and Redis.
 
 ### Needs the owner (see LATER.md)
-- [ ] GitHub OAuth app + GitHub App (private repos, repo picker)
-- [ ] VPS, DNS, Cloudflare token, R2 bucket; first production run
+- [x] GitHub OAuth app
+- [x] GitHub App code: installation tokens for private clones, repo picker, App webhooks (owner creates the App, LATER.md § 2)
+- [x] VPS (Vultr), DNS, Cloudflare token; first production run (dash.unstakd.com, unstakd.com)
+- [ ] R2 bucket for off-site backups
 
 ### v1.1 (from the PRD)
 - [x] Preview deploys per pull request at pr-<n>-<app>, removed on close (D8)
