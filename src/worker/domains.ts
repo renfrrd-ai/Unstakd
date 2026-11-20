@@ -1,5 +1,6 @@
 import { eq, ne } from "drizzle-orm";
 import { db, schema as s } from "@/db";
+import { customDomainError } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
@@ -30,7 +31,8 @@ export async function checkDomains(log: (l: string) => void = () => {}) {
   const touched = new Set<string>();
 
   for (const d of rows) {
-    if (d.hostname === APPS_DOMAIN || d.hostname.endsWith(`.${APPS_DOMAIN}`)) continue;
+    // <app>.<apps domain> hosts are automatic; the apex and www can be claimed like custom domains.
+    if (customDomainError(d.hostname, APPS_DOMAIN)) continue;
     const verdict = await checkDns(d.hostname, { host: EDGE_HOST, ip: EDGE_IP });
     let status = d.status;
     if (verdict === "ok") {
