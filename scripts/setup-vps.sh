@@ -16,11 +16,17 @@ log() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
 
 log "Packages"
 export DEBIAN_FRONTEND=noninteractive
+# needrestart can hang at "Scanning processes" when run from a script; services restart on reboot.
+export NEEDRESTART_SUSPEND=1 NEEDRESTART_MODE=l
 apt-get update -y
 apt-get install -y ca-certificates curl git ufw fail2ban unattended-upgrades openssl
 
 log "SSH: keys only"
-if ! ls /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys >/dev/null 2>&1; then
+has_key=false
+for f in /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys; do
+  if [[ -f $f ]] && grep -qE '^(ssh-|ecdsa-|sk-)' "$f"; then has_key=true; fi
+done
+if ! $has_key; then
   echo "No authorized_keys found. Add your SSH key before disabling passwords; skipping SSH hardening."
 else
   cat > /etc/ssh/sshd_config.d/90-unstakd.conf <<'EOF'
