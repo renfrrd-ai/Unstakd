@@ -20,7 +20,7 @@ RUN apk add --no-cache git tar docker-cli tini \
  && echo "${RAILPACK_SHA256}  /tmp/railpack.tgz" | sha256sum -c - \
  && tar -xzf /tmp/railpack.tgz -C /usr/local/bin railpack \
  && rm /tmp/railpack.tgz
-ENV NODE_ENV=production
+ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static

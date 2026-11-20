@@ -15,6 +15,9 @@ x-app-env: &app-env
     BUILDKIT_HOST: tcp://buildkit:1234
     PLATFORM_DB_CONTAINER: unstakd-postgres-1
     NODE_ENV: production
+    # Next's standalone server binds to $HOSTNAME, which Docker sets to the container id: that
+    # listens on one network only, so Caddy got 502s. Listen on every interface.
+    HOSTNAME: 0.0.0.0
 
 services:
   postgres:
