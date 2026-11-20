@@ -11,7 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { env } from "@/lib/env";
 import { newSlugSchema } from "@/lib/validation";
+import { db, schema as s } from "@/db";
+import { timeAgo } from "@/lib/format";
+import { appInfo, githubAppConfigured, listAppRepos } from "@/server/github-app";
 import { inspectRepo, parseRepo } from "@/server/repo-inspect";
+import { List, ListRow } from "@/components/ui/panel";
+import { Pill } from "@/components/ui/pill";
 import { requireUser } from "@/server/session";
 
 export const metadata: Metadata = { title: "New project" };
@@ -75,11 +80,14 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
         <div>
           <StepPills current={1} />
           <h1 className="mt-5 mb-0 font-display text-[40px] leading-tight font-bold tracking-[-0.03em]">Deploy a repo</h1>
-          <p className="mt-2 mb-0 text-muted">Public GitHub repos work now. Private ones need the Unstakd GitHub App (coming with push-to-deploy).</p>
+          <p className="mt-2 mb-0 text-muted">Pick a repo the Unstakd GitHub App can see (private ones included), or paste any public repo.</p>
         </div>
+        <Suspense fallback={<Skeleton className="h-64 max-w-2xl" />}>
+          <RepoPicker />
+        </Suspense>
         <Panel className="max-w-2xl p-6">
           <form method="get" className="flex flex-col gap-3">
-            <label htmlFor="repo" className="text-[13px] text-muted">Repository</label>
+            <label htmlFor="repo" className="text-[13px] text-muted">Or a public repository</label>
             <div className="flex flex-wrap gap-2">
               <Input id="repo" name="repo" mono required defaultValue={raw} placeholder="owner/name or https://github.com/owner/name" className="min-w-0 flex-1" autoComplete="off" />
               <Button type="submit" variant="primary">Continue</Button>
@@ -116,5 +124,52 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
       appsDomain={env().APPS_DOMAIN}
       steps={<StepPills current={2} />}
     />
+  );
+}
+
+async function RepoPicker() {
+  await requireUser();
+  if (!githubAppConfigured()) {
+    return (
+      <Panel className="max-w-2xl p-5 text-muted">
+        Private repos and this list need the Unstakd GitHub App. Set it up under{" "}
+        <Link href="/server" className="text-accent-text hover:underline">Server → GitHub App</Link>.
+      </Panel>
+    );
+  }
+  let repos, installUrl;
+  try {
+    [repos, { installUrl }] = await Promise.all([listAppRepos(), appInfo()]);
+  } catch (e) {
+    return (
+      <Panel className="max-w-2xl border-err-border p-5">
+        <p role="alert" className="m-0 text-err">Couldn&apos;t list repos from GitHub: {(e as Error).message}</p>
+      </Panel>
+    );
+  }
+  const used = new Map((await db().select({ repo: s.projects.repo, slug: s.projects.slug }).from(s.projects)).map((p) => [p.repo.toLowerCase(), p.slug]));
+  return (
+    <section aria-labelledby="repos-h" className="flex max-w-2xl flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="repos-h" className="m-0 text-base font-semibold">Your repositories</h2>
+        <a href={installUrl} className="text-[13px] text-accent-text hover:underline">Add repos on GitHub ↗</a>
+      </div>
+      {repos.length === 0 ? (
+        <Panel className="p-5 text-muted">The App isn&apos;t installed on any repos yet. Use “Add repos on GitHub”.</Panel>
+      ) : (
+        <List className="max-h-[420px] overflow-y-auto">
+          {repos.map((r) => (
+            <ListRow key={r.repo} href={`/new?repo=${encodeURIComponent(r.repo)}`}>
+              <span className="flex min-w-0 items-center gap-2.5">
+                <span className="truncate font-mono text-[13px]">{r.repo}</span>
+                {r.private && <Pill tone="neutral">private</Pill>}
+                {used.has(r.repo.toLowerCase()) && <span className="text-[13px] text-muted">on {used.get(r.repo.toLowerCase())}</span>}
+              </span>
+              <span className="text-[13px] text-muted">{r.pushedAt ? `pushed ${timeAgo(new Date(r.pushedAt))}` : "empty"}</span>
+            </ListRow>
+          ))}
+        </List>
+      )}
+    </section>
   );
 }

@@ -15,6 +15,8 @@ import { db, schema as s } from "@/db";
 import { duration, timeAgo } from "@/lib/format";
 import { hostStats } from "@/server/host-stats";
 import { deployStats } from "@/server/queries";
+import { appInfo, githubAppConfig } from "@/server/github-app";
+import { Pill } from "@/components/ui/pill";
 
 export const metadata: Metadata = { title: "Server" };
 
@@ -26,6 +28,9 @@ export default function ServerPage() {
       </Suspense>
       <Suspense fallback={<Skeleton className="h-64" />}>
         <Alerts />
+      </Suspense>
+      <Suspense fallback={<Skeleton className="h-40" />}>
+        <GitHubApp />
       </Suspense>
       <Suspense fallback={<Skeleton className="h-48" />}>
         <ApiTokens />
@@ -133,6 +138,63 @@ async function ApiTokens() {
           <p className="m-0 text-muted">No tokens yet.</p>
         )}
         <NewToken action={createToken} />
+      </Panel>
+    </section>
+  );
+}
+
+async function GitHubApp() {
+  await requireUser();
+  const cfg = githubAppConfig();
+  let info: Awaited<ReturnType<typeof appInfo>> | null = null;
+  let error: string | null = null;
+  if (cfg) info = await appInfo().catch((e: Error) => ((error = e.message), null));
+  return (
+    <section aria-labelledby="ghapp-h" className="flex flex-col gap-3.5">
+      <div>
+        <h2 id="ghapp-h" className="m-0 text-lg font-semibold">GitHub App</h2>
+        <p className="mt-1 mb-0 text-muted">Clones private repos, lists your repos in New project, and sends pushes and pull requests here, so no repo needs its own webhook.</p>
+      </div>
+      <Panel className="flex flex-col gap-4 p-5">
+        {!cfg ? (
+          <div className="flex flex-col gap-2 text-muted">
+            <span className="flex items-center gap-3"><Pill tone="neutral">Not set up</Pill></span>
+            <p className="m-0">
+              Create a GitHub App, save its private key on this server and set <code className="font-mono text-soft">GITHUB_APP_ID</code> and{" "}
+              <code className="font-mono text-soft">GITHUB_APP_KEY_FILE</code> in <code className="font-mono text-soft">.env</code>. Steps: docs/LATER.md § 2.
+            </p>
+          </div>
+        ) : error || !info ? (
+          <div className="flex flex-col gap-2">
+            <span><Pill tone="err">Can&apos;t reach GitHub</Pill></span>
+            <p className="m-0 text-[13px] text-err">{error}. Check the App ID and that the key file is the App&apos;s current private key.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="flex flex-wrap items-center gap-3">
+                <Pill tone="ok">Connected</Pill>
+                <a href={info.html_url} className="font-mono text-[13px] text-accent-text hover:underline">{info.slug}</a>
+              </span>
+              <a href={info.installUrl} className="text-[13px] text-accent-text hover:underline">Install on another account ↗</a>
+            </div>
+            {info.installations.length === 0 ? (
+              <p className="m-0 text-muted">Not installed anywhere yet.</p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {info.installations.map((i) => (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="flex items-center gap-3">
+                      <span className="font-semibold">{i.account}</span>
+                      <span className="text-[13px] text-muted">{i.accountType === "Organization" ? "organization" : "personal"} · {i.selection === "all" ? "all repositories" : "selected repositories"}</span>
+                    </span>
+                    <a href={i.manageUrl} className="text-[13px] text-accent-text hover:underline">Manage ↗</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
       </Panel>
     </section>
   );
