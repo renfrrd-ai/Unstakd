@@ -1,4 +1,4 @@
-import { and, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import type { Readable } from "node:stream";
 import { db, schema as s } from "@/db";
 import type { Backup, Database } from "@/db/schema";
@@ -88,7 +88,15 @@ export async function restoreDatabase(d: Database, backup: Backup) {
 export async function pruneBackups(databaseId?: string) {
   const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 3600 * 1000);
   const where = databaseId ? and(lt(s.backups.createdAt, cutoff), eq(s.backups.databaseId, databaseId)) : lt(s.backups.createdAt, cutoff);
-  const old = await db().select().from(s.backups).where(where);
+  // Each database's newest good backup is kept however old it is: if backups start failing,
+  // retention must not delete the last copy you could restore from.
+  const newest = await db()
+    .selectDistinctOn([s.backups.databaseId], { id: s.backups.id })
+    .from(s.backups)
+    .where(eq(s.backups.status, "done"))
+    .orderBy(s.backups.databaseId, desc(s.backups.createdAt));
+  const keep = new Set(newest.map((b) => b.id));
+  const old = (await db().select().from(s.backups).where(where)).filter((b) => !keep.has(b.id));
   const store = backupStore();
   for (const b of old) {
     if (b.objectKey && b.storage === store.kind) await store.delete(b.objectKey).catch(() => {});
