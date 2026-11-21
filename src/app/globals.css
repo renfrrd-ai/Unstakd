@@ -52,6 +52,8 @@
   --tint-data-strong: light-dark(#ffefc2, #3a3118);
 
   --track: light-dark(#f1f0ec, #26262c);
+  /* Map connectors. */
+  --edge: light-dark(#c9c8c2, #55555e);
 
   /* The log panel is dark in both themes. */
   --log-bg: light-dark(#141417, #0b0b0d);
@@ -127,6 +129,7 @@
   --color-tint-data: var(--tint-data);
   --color-tint-data-strong: var(--tint-data-strong);
   --color-track: var(--track);
+  --color-edge: var(--edge);
   --color-log-bg: var(--log-bg);
   --color-log-border: var(--log-border);
   --color-log-text: var(--log-text);

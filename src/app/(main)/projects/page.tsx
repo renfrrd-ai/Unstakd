@@ -14,7 +14,7 @@ import { hotText, Meter, pctText } from "@/components/ui/meter";
 import { EmptyState, KeyValues, Panel } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SoonBadge, SoonButton } from "@/components/ui/soon";
+import { SoonBadge } from "@/components/ui/soon";
 import { bytes } from "@/lib/format";
 import { readLog } from "@/lib/logs";
 import { healthPill, isInProgress } from "@/lib/status";
@@ -197,7 +197,7 @@ async function SidePanel({ p, v, hostname }: { p: ProjectSummary; v: ProjectView
       <div className="mt-auto flex flex-wrap gap-2">
         <ProjectAction p={v} size="md" />
         <ButtonLink href={`/projects/${p.slug}/environment`}>Environment</ButtonLink>
-        <SoonButton>Show on map</SoonButton>
+        <ButtonLink href={`/map?focus=${encodeURIComponent(`a:${p.slug}`)}`}>Show on map</ButtonLink>
       </div>
     </Panel>
   );

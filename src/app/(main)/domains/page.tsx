@@ -10,7 +10,7 @@ import { Field, Input, Select } from "@/components/ui/field";
 import { CardHeader, EmptyState, KeyValues, Panel } from "@/components/ui/panel";
 import { Pill } from "@/components/ui/pill";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SoonButton, SoonLink } from "@/components/ui/soon";
+import { SoonButton } from "@/components/ui/soon";
 import { cn } from "@/lib/cn";
 import { requiredRecord } from "@/lib/dns";
 import { defaultHost } from "@/lib/domains";
@@ -175,7 +175,7 @@ async function Domains({ searchParams }: { searchParams: Props["searchParams"] }
           <Panel className="flex flex-col gap-3 p-5.5">
             <CardHeader as="h3" title="Routing" />
             <RouteChain domain={sel.domain.hostname} app={<Link href={`/projects/${sel.project.slug}`} className="hover:text-accent-text">{sel.project.name}</Link>} />
-            <SoonLink>See it on the map →</SoonLink>
+            <Link href={`/map?focus=${encodeURIComponent(`d:${sel.domain.hostname}`)}`} className="text-[13px] font-medium text-accent-text hover:text-accent-strong">See it on the map →</Link>
           </Panel>
         </aside>
       </div>

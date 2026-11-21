@@ -7,7 +7,7 @@ import { NavLinks, type NavItem } from "./nav-links";
 const mainNav: NavItem[] = [
   { href: "/", label: "Dashboard", exact: true },
   { href: "/projects", label: "Projects" },
-  { href: "/map", label: "Map", soon: true },
+  { href: "/map", label: "Map" },
   { href: "/databases", label: "Databases" },
   { href: "/domains", label: "Domains" },
   { href: "/billing", label: "Billing", soon: true },

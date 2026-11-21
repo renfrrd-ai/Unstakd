@@ -8,7 +8,8 @@ import { ConnectRepoCard, ProjectCard } from "@/components/projects/project-card
 import { countsLine, toView } from "@/components/projects/view";
 import { CardHeader, Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Inactive, SoonButton, SoonLink } from "@/components/ui/soon";
+import { ButtonLink } from "@/components/ui/button";
+import { Inactive, SoonLink } from "@/components/ui/soon";
 import { StatCard } from "@/components/ui/stat-card";
 import { env } from "@/lib/env";
 import { timeAgo } from "@/lib/format";
@@ -67,7 +68,7 @@ async function Dashboard() {
             {projects.length} project{projects.length === 1 ? "" : "s"}. <span className="text-dim">1 server.</span>
           </>
         }
-        actions={<SoonButton variant="outline">Open map</SoonButton>}
+        actions={<ButtonLink href="/map" variant="outline">Open map</ButtonLink>}
       />
 
       {failing.map((p) => (

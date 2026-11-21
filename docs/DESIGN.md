@@ -2,7 +2,7 @@
 
 > **Current look (Nov 2026): [`Unstakd.html`](../Unstakd.html)** — Dashboard, Projects, Map, Databases, Domains,
 > Billing. Plus Jakarta Sans + JetBrains Mono, blue accent, 16–18px-radius cards, dark log panel. Light tokens
-> come from that file; dark tokens are derived (`src/app/globals.css`). Map, Billing, per-project cost, table
+> come from that file; dark tokens are derived (`src/app/globals.css`). Billing, per-project cost, table
 > stats, DNS "Add record" and the server-migration card are shown but inactive (`components/ui/soon.tsx`) until built.
 > The token table and parts below describe the previous Terminal Night look and are kept for history.
 
