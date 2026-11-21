@@ -5,8 +5,8 @@ one-click Postgres/Redis. Single user (the owner), one VPS.
 
 - Requirements: [PRD.MD](PRD.MD) — read the relevant section before building a feature.
 - Status and decisions: [docs/PLAN.md](docs/PLAN.md). Things waiting on the owner: [docs/LATER.md](docs/LATER.md).
-- UI: [docs/DESIGN.md](docs/DESIGN.md) — tokens, type, parts; reference markup per screen in
-  [docs/design/screens/](docs/design/screens/). Look = Terminal Night (dark/light), structure = Direction B.
+- UI: [docs/DESIGN.md](docs/DESIGN.md) — tokens, type, parts; current screens in [Unstakd.html](Unstakd.html)
+  (light; dark is derived). Unbuilt features from it are shown inactive via `components/ui/soon.tsx`.
 
 ## Stack
 
