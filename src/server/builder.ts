@@ -1,6 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { docker, LABEL } from "./docker";
@@ -75,8 +75,45 @@ export function detectStatic(dir: string, pkg: { dependencies?: Record<string, s
   return { buildCommand: `${runScript(dir)} build`, outputDir };
 }
 
-export async function detect(dir: string): Promise<Detected> {
-  const hasDockerfile = existsSync(path.join(dir, "Dockerfile"));
+/**
+ * Resolves a project path (root directory, Dockerfile) inside a cloned repo. Follows symlinks
+ * and refuses anything that lands outside the repo, so a repo can't point the build at host files.
+ */
+export async function resolveInRepo(repo: string, rel: string | null | undefined, what = "Root directory") {
+  const base = await realpath(repo);
+  const target = path.resolve(base, rel || ".");
+  let real: string;
+  try {
+    real = await realpath(target);
+  } catch {
+    throw new Error(`${what} "${rel}" doesn't exist in the repo`);
+  }
+  if (real !== base && !real.startsWith(base + path.sep)) throw new Error(`${what} "${rel}" points outside the repo`);
+  return real;
+}
+
+const SKIP_DIRS = new Set(["node_modules", "vendor", "dist", "build", "out", "target", "venv", ".venv", "__pycache__"]);
+const APP_MARKERS = ["Dockerfile", "package.json", "requirements.txt", "pyproject.toml", "go.mod", "index.html"];
+
+// Folders (up to two levels deep) that look like an app of their own: monorepo root-directory candidates.
+export async function findAppDirs(repo: string, depth = 2): Promise<string[]> {
+  const found: string[] = [];
+  const walk = async (rel: string, level: number) => {
+    if (level > depth) return;
+    const entries = await readdir(path.join(repo, rel), { withFileTypes: true }).catch(() => []);
+    if (rel && entries.some((e) => e.isFile() && APP_MARKERS.includes(e.name))) found.push(rel);
+    for (const e of entries) {
+      if (e.isDirectory() && !e.name.startsWith(".") && !SKIP_DIRS.has(e.name)) await walk(path.posix.join(rel, e.name), level + 1);
+    }
+  };
+  await walk("", 0);
+  return found.sort().slice(0, 50);
+}
+
+// `dockerfile` is relative to `dir` (the build context).
+export async function detect(dir: string, dockerfile = "Dockerfile"): Promise<Detected> {
+  const dockerfileAt = path.join(dir, dockerfile);
+  const hasDockerfile = existsSync(dockerfileAt) && (await resolveInRepo(dir, dockerfile, "Dockerfile path").then(() => true, () => false));
   let framework: string | null = null;
   let port: number | null = null;
   let pkg = null;
@@ -92,7 +129,7 @@ export async function detect(dir: string): Promise<Detected> {
     else if (existsSync(path.join(dir, "go.mod"))) framework = "Go";
   }
   if (hasDockerfile) {
-    const df = await readFile(path.join(dir, "Dockerfile"), "utf8");
+    const df = await readFile(dockerfileAt, "utf8");
     const expose = /^\s*EXPOSE\s+(\d+)/im.exec(df);
     if (expose) port = Number(expose[1]);
   }
@@ -113,11 +150,13 @@ export async function railpackAvailable() {
 
 type Log = (line: string) => void;
 
-export async function buildDockerfile(dir: string, tag: string, log: Log, signal: AbortSignal) {
+// `dir` is the build context; `dockerfile` is relative to it.
+export async function buildDockerfile(dir: string, tag: string, log: Log, signal: AbortSignal, dockerfile = "Dockerfile") {
   const tar = spawn("tar", ["-C", dir, "--exclude=./.git", "-c", "."], { signal });
   tar.on("error", () => {});
   const stream = await docker().buildImage(tar.stdout as unknown as NodeJS.ReadableStream, {
     t: tag,
+    dockerfile,
     labels: { [`${LABEL}.managed`]: "true", [`${LABEL}.kind`]: "app-image" },
     rm: true,
     forcerm: true,

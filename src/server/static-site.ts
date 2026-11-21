@@ -66,11 +66,13 @@ async function runToEnd(container: import("dockerode").Container, log: Log, sign
  */
 export async function buildStatic(
   src: string,
-  opts: { slug: string; key: string; plan: ReturnType<typeof staticPlan>; env: string[]; cpu: number; memoryMb: number },
+  // `subdir`: the project's root directory inside the repo (monorepos); the whole repo is copied in.
+  opts: { slug: string; key: string; plan: ReturnType<typeof staticPlan>; subdir?: string; env: string[]; cpu: number; memoryMb: number },
   log: Log,
   signal: AbortSignal,
 ) {
   const { plan } = opts;
+  const workDir = path.posix.join("/src", opts.subdir ?? "");
   const name = `build-${opts.slug}-${opts.key}`;
   const script = [plan.install, plan.build].filter(Boolean).join(" && ") || "true";
   if (plan.install) log(`$ ${plan.install}`);
@@ -82,7 +84,7 @@ export async function buildStatic(
     name,
     Image: BUILD_IMAGE(),
     Cmd: ["sh", "-c", script],
-    WorkingDir: "/src",
+    WorkingDir: workDir,
     Env: ["CI=true", ...opts.env],
     Labels: { [`${LABEL}.managed`]: "true", [`${LABEL}.kind`]: "static-build", [`${LABEL}.project`]: opts.slug },
     HostConfig: {
@@ -100,7 +102,7 @@ export async function buildStatic(
     if (signal.aborted) throw new Error("cancelled");
     if (code !== 0) throw new Error(`build command exited with ${code}`);
 
-    const from = path.posix.join("/src", plan.outputDir);
+    const from = path.posix.join(workDir, plan.outputDir);
     const archive = (await builder.getArchive({ path: from }).catch(() => {
       throw new Error(`output directory "${plan.outputDir}" doesn't exist after the build`);
     })) as unknown as Readable;

@@ -51,6 +51,9 @@ export const projects = pgTable("projects", {
   // Static mode only: null means detect from package.json.
   buildCommand: text("build_command"),
   outputDir: text("output_dir"),
+  // Monorepos: build from this folder (null = repo root), with this Dockerfile (relative to it; null = "Dockerfile").
+  rootDir: text("root_dir"),
+  dockerfilePath: text("dockerfile_path"),
   port: integer("port").notNull().default(3000),
   healthPath: text("health_path").notNull().default("/"),
   cpuLimit: real("cpu_limit").notNull().default(1),

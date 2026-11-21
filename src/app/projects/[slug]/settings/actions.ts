@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, schema as s } from "@/db";
 import { queues } from "@/lib/queue";
-import { buildCommandSchema, outputDirSchema, SIZES, type FormState, type Size } from "@/lib/validation";
+import { buildCommandSchema, dockerfilePathSchema, outputDirSchema, rootDirSchema, SIZES, type FormState, type Size } from "@/lib/validation";
 import { audit } from "@/server/audit";
 import { done, projectFor } from "@/server/project-action";
 
@@ -17,6 +17,8 @@ const settings = z.object({
   size: z.enum(Object.keys(SIZES) as [Size, ...Size[]]),
   buildCommand: buildCommandSchema.optional(),
   outputDir: outputDirSchema.optional(),
+  rootDir: rootDirSchema.optional(),
+  dockerfilePath: dockerfilePathSchema.optional(),
 });
 
 export async function updateSettings(slug: string, _prev: FormState, data: FormData): Promise<FormState> {

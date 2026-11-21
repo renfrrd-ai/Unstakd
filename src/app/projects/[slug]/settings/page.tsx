@@ -51,6 +51,15 @@ async function Settings({ params }: { params: Props["params"] }) {
               </div>
               <fieldset className="m-0 flex flex-col gap-3 border-0 border-t border-border p-0 pt-4">
                 <legend className="float-left mb-1 text-[13px] text-muted">
+                  Monorepos. The root directory is the build context and where the stack is detected; leave both blank to build from the repo root with its <span className="font-mono">Dockerfile</span>.
+                </legend>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Root directory"><Input name="rootDir" mono defaultValue={p.rootDir ?? ""} placeholder="/ (repo root)" autoComplete="off" /></Field>
+                  <Field label="Dockerfile path (inside the root directory)"><Input name="dockerfilePath" mono defaultValue={p.dockerfilePath ?? ""} placeholder="Dockerfile" autoComplete="off" /></Field>
+                </div>
+              </fieldset>
+              <fieldset className="m-0 flex flex-col gap-3 border-0 border-t border-border p-0 pt-4">
+                <legend className="float-left mb-1 text-[13px] text-muted">
                   Static sites only. Leave blank to detect from <span className="font-mono">package.json</span>; port and health path aren&apos;t used.
                 </legend>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

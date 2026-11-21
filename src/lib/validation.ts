@@ -22,13 +22,23 @@ export const buildCommandSchema = z
   .trim()
   .max(500, "Keep the build command under 500 characters")
   .transform((v) => v || null);
-export const outputDirSchema = z
-  .string()
-  .trim()
-  .max(200)
-  .regex(/^[\w./-]*$/, "Output directory: letters, numbers, . / - and _ only")
-  .refine((v) => !v.split("/").includes("..") && !v.startsWith("/"), "Output directory must be inside the repo")
-  .transform((v) => v.replace(/^\.\/+/, "").replace(/\/+$/, "") || null);
+// A path inside the repo: no absolute paths, no "..". Blank → null.
+const repoPath = (label: string, dotIsBlank = false) =>
+  z
+    .string()
+    .trim()
+    .max(200)
+    .regex(/^[\w./-]*$/, `${label}: letters, numbers, . / - and _ only`)
+    .refine((v) => !v.split("/").includes("..") && !v.startsWith("/"), `${label} must be inside the repo`)
+    .transform((v) => {
+      const p = v.replace(/^\.\/+/, "").replace(/\/+$/, "");
+      return (dotIsBlank && p === "." ? "" : p) || null;
+    });
+export const outputDirSchema = repoPath("Output directory");
+// Monorepos: the folder the app builds from (the Docker build context). Blank = repo root.
+export const rootDirSchema = repoPath("Root directory", true);
+// Relative to the root directory. Blank = "Dockerfile".
+export const dockerfilePathSchema = repoPath("Dockerfile path");
 export const envKeySchema = z.string().trim().regex(ENV_KEY, "Keys use letters, numbers and _ and can't start with a number");
 
 export const SIZES = {

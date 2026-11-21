@@ -11,7 +11,7 @@ import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { env } from "@/lib/env";
-import { newSlugSchema } from "@/lib/validation";
+import { newSlugSchema, rootDirSchema } from "@/lib/validation";
 import { db, schema as s } from "@/db";
 import { timeAgo } from "@/lib/format";
 import { appInfo, githubAppConfigured, listAppRepos } from "@/server/github-app";
@@ -70,6 +70,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
   const params = await searchParams;
   const raw = typeof params.repo === "string" ? params.repo : "";
   const repo = raw ? parseRepo(raw) : null;
+  const root = rootDirSchema.safeParse(typeof params.root === "string" ? params.root : "");
 
   if (!repo) {
     return (
@@ -98,14 +99,14 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
 
   let info;
   try {
-    info = await inspectRepo(repo);
+    info = await inspectRepo(repo, { rootDir: root.success ? root.data : null });
   } catch (e) {
     return (
       <>
         <StepPills current={1} />
         <Panel className="max-w-2xl border-err-border p-6">
           <p role="alert" className="m-0 text-err">{(e as Error).message}</p>
-          <Link href="/new" className="mt-3 inline-block font-medium text-accent-text hover:text-accent-strong">← Try another repo</Link>
+          <Link href={root.success && root.data ? `/new?repo=${encodeURIComponent(repo)}` : "/new"} className="mt-3 inline-block font-medium text-accent-text hover:text-accent-strong">{root.success && root.data ? "← Back to the repo root" : "← Try another repo"}</Link>
         </Panel>
       </>
     );
@@ -117,6 +118,8 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
       repo={info.repo}
       branch={info.defaultBranch}
       detected={info.detected}
+      rootDir={info.rootDir}
+      appDirs={info.appDirs}
       suggestedSlug={suggested.success ? suggested.data : ""}
       appsDomain={env().APPS_DOMAIN}
       steps={<StepPills current={2} />}

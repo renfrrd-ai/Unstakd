@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { and, eq } from "drizzle-orm";
@@ -12,7 +12,7 @@ import { createRedis, redis } from "@/lib/redis";
 import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { readLog } from "@/lib/logs";
-import { buildDockerfile, buildRailpack, detect } from "@/server/builder";
+import { buildDockerfile, buildRailpack, detect, resolveInRepo } from "@/server/builder";
 import { caddyEnabled, previewRouteId, setRoute, type Upstream } from "@/server/caddy";
 import { applyRoute, describeUpstream, upstreamFor } from "@/server/routing";
 import { buildStatic, checkSite, isSiteRef, siteExists, siteKey, staticPlan } from "@/server/static-site";
@@ -80,11 +80,13 @@ export async function runDeploy(deploymentId: string) {
   // Static mode: build in a throwaway container and publish the output to the sites volume.
   const buildSite = async (src: string) => {
     const ref = await step("build", async () => {
-      const pkg = await readFile(path.join(src, "package.json"), "utf8").then(JSON.parse, () => null);
-      const plan = staticPlan(project, src, pkg);
-      log.step(`build  static site${project.framework ? ` · ${project.framework}` : ""} → ${plan.outputDir}/`);
+      const appDir = await resolveInRepo(src, project.rootDir);
+      const subdir = path.relative(await realpath(src), appDir).split(path.sep).join("/");
+      const pkg = await readFile(path.join(appDir, "package.json"), "utf8").then(JSON.parse, () => null);
+      const plan = staticPlan(project, appDir, pkg);
+      log.step(`build  static site${project.framework ? ` · ${project.framework}` : ""}${subdir ? ` in ${subdir}/` : ""} → ${plan.outputDir}/`);
       const env = await containerEnv(project);
-      const site = await buildStatic(src, { slug: project.slug, key: siteKey(d.number, pr), plan, env, cpu: project.cpuLimit, memoryMb: project.memoryMb }, log.info, abort.signal);
+      const site = await buildStatic(src, { slug: project.slug, key: siteKey(d.number, pr), plan, subdir, env, cpu: project.cpuLimit, memoryMb: project.memoryMb }, log.info, abort.signal);
       log.info(`published ${site}`);
       return site;
     });
@@ -94,14 +96,20 @@ export async function runDeploy(deploymentId: string) {
 
   const buildImage = async (src: string, tag: string) => {
     await step("build", async () => {
-      const found = await detect(src);
-      const mode = found.mode === "dockerfile" || project.buildMode === "dockerfile" ? "dockerfile" : "railpack";
+      const appDir = await resolveInRepo(src, project.rootDir);
+      const dockerfile = project.dockerfilePath ?? "Dockerfile";
+      const found = await detect(appDir, dockerfile);
+      const where = project.rootDir ? `${project.rootDir}/` : "the repo root";
+      if (project.buildMode === "dockerfile" && found.mode !== "dockerfile") {
+        throw new Error(`No ${dockerfile} in ${where}. Set the root directory and Dockerfile path under Settings.`);
+      }
+      const mode = found.mode === "dockerfile" ? "dockerfile" : "railpack";
       if (found.framework && found.framework !== project.framework) {
         await db().update(s.projects).set({ framework: found.framework }).where(eq(s.projects.id, project.id));
       }
-      log.step(`build  ${mode}${found.framework ? ` · ${found.framework}` : ""}`);
-      if (mode === "dockerfile") await buildDockerfile(src, tag, log.info, abort.signal);
-      else await buildRailpack(src, tag, log.info, abort.signal, await containerEnv(project));
+      log.step(`build  ${mode}${found.framework ? ` · ${found.framework}` : ""}${project.rootDir ? ` in ${project.rootDir}/` : ""}${mode === "dockerfile" && dockerfile !== "Dockerfile" ? ` with ${dockerfile}` : ""}`);
+      if (mode === "dockerfile") await buildDockerfile(appDir, tag, log.info, abort.signal, dockerfile);
+      else await buildRailpack(appDir, tag, log.info, abort.signal, await containerEnv(project));
       log.info(`built ${tag}`);
     });
     await step(

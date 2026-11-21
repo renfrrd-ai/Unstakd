@@ -8,7 +8,7 @@ import { encrypt } from "@/lib/crypto";
 import { defaultHost } from "@/lib/domains";
 import { env } from "@/lib/env";
 import { queues } from "@/lib/queue";
-import { buildCommandSchema, outputDirSchema, parseDotEnv, REPO, SIZES, newSlugSchema, type FormState, type Size } from "@/lib/validation";
+import { buildCommandSchema, outputDirSchema, rootDirSchema, parseDotEnv, REPO, SIZES, newSlugSchema, type FormState, type Size } from "@/lib/validation";
 import { audit } from "@/server/audit";
 import { dbContainerName, dbVolumeName, ENGINES, newCredentials, nextLocalPort } from "@/server/database-catalog";
 import { createDeployment } from "@/server/deployments";
@@ -24,6 +24,7 @@ const schema = z.object({
   buildMode: z.enum(["railpack", "dockerfile", "static"]),
   buildCommand: buildCommandSchema.optional(),
   outputDir: outputDirSchema.optional(),
+  rootDir: rootDirSchema.optional(),
   framework: z.string().optional(),
   dotenv: z.string().optional(),
   createDb: z.literal("on").optional(),
@@ -59,6 +60,7 @@ export async function createProject(_prev: FormState, data: FormData): Promise<F
         framework: p.framework || null,
         buildCommand: p.buildMode === "static" ? (p.buildCommand ?? null) : null,
         outputDir: p.buildMode === "static" ? (p.outputDir ?? null) : null,
+        rootDir: p.rootDir ?? null,
         port: p.port,
         healthPath: p.healthPath,
         cpuLimit: SIZES[p.size].cpu,
