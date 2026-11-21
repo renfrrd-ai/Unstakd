@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { LiveUpdates } from "@/components/layout/live-updates";
 import { ProjectHeader } from "@/components/layout/project-header";
 import { UserMenu } from "@/components/layout/user-menu";
+import { Swap } from "@/components/motion/motion";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import { publicUrl } from "@/lib/domains";
@@ -38,7 +39,7 @@ async function Header({ params }: { params: LayoutProps<"/projects/[slug]">["par
     <ProjectHeader
       slug={project.slug}
       name={project.name}
-      status={<Pill tone={pill.tone}>{pill.label}</Pill>}
+      status={<Swap k={pill.label}><Pill tone={pill.tone}>{pill.label}</Pill></Swap>}
       meta={
         <>
           <a href={`https://github.com/${project.repo}`} target="_blank" rel="noreferrer" className="hover:text-text">{project.repo}</a>

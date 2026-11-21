@@ -1,3 +1,4 @@
+import { Grow } from "@/components/motion/motion";
 import { cn } from "@/lib/cn";
 
 export const HOT = 80;
@@ -15,7 +16,7 @@ export function Meter({ percent, label, size = "md", className }: { percent: num
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      {pct != null && <div className={cn("rounded-full", h, pct >= HOT ? "bg-warn-dot" : "bg-accent")} style={{ width: `${Math.max(pct, pct > 0 ? 2 : 0)}%` }} />}
+      {pct != null && <Grow className={cn("rounded-full transition-colors", h, pct >= HOT ? "bg-warn-dot" : "bg-accent")} width={`${Math.max(pct, pct > 0 ? 2 : 0)}%`} />}
     </div>
   );
 }

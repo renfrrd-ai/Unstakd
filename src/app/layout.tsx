@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { MotionProvider } from "@/components/motion/motion";
 import { themeInitScript } from "@/components/theme/theme";
 import "./globals.css";
 
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }

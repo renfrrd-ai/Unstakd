@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Reveal } from "@/components/motion/motion";
 import { cn } from "@/lib/cn";
 
 export function PageMain({ children, className = "gap-8" }: { children: ReactNode; className?: string }) {
@@ -7,13 +8,13 @@ export function PageMain({ children, className = "gap-8" }: { children: ReactNod
 
 export function PageTitle({ title, description, actions }: { title: ReactNode; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <section className="flex flex-wrap items-end justify-between gap-5">
+    <Reveal as="section" className="flex flex-wrap items-end justify-between gap-5">
       <div className="flex min-w-0 flex-col gap-1.5">
         <h1 className="m-0 text-[28px] leading-[1.15] font-bold tracking-[-0.03em] sm:text-[32px]">{title}</h1>
         {description && <p className="m-0 text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
-    </section>
+    </Reveal>
   );
 }
 

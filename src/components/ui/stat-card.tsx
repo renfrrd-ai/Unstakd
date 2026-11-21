@@ -4,7 +4,7 @@ import { Panel } from "./panel";
 
 export function StatCard({ label, value, unit, percent, footnote }: { label: string; value: ReactNode; unit?: string; percent?: number; footnote?: ReactNode }) {
   return (
-    <Panel className="flex flex-col gap-1.5 rounded-2xl p-5">
+    <Panel className="flex h-full flex-col gap-1.5 rounded-2xl p-5">
       <span className="text-[13px] text-muted">{label}</span>
       <span className="text-[28px] leading-tight font-bold tracking-[-0.02em]">
         {value}

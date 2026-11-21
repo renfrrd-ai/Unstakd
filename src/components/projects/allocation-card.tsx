@@ -1,3 +1,4 @@
+import { Grow } from "@/components/motion/motion";
 import { HOT, hotText, Meter, pctText } from "@/components/ui/meter";
 import { Panel, CardHeader } from "@/components/ui/panel";
 import { cn } from "@/lib/cn";
@@ -23,7 +24,7 @@ export function AllocationCard({ projects, cores, hostname }: { projects: Projec
         <>
           <div aria-hidden="true" className="flex h-2.5 gap-0.5 overflow-hidden rounded-[5px] bg-track">
             {apps.map((p, i) => (
-              <div key={p.slug} className={seriesOf(i)} style={{ width: `${(100 * p.alloc) / scale}%` }} />
+              <Grow key={p.slug} className={seriesOf(i)} width={`${(100 * p.alloc) / scale}%`} delay={i * 0.06} />
             ))}
           </div>
           <p className="m-0 text-xs text-muted">
