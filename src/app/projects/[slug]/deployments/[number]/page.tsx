@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { cancel } from "@/app/projects/[slug]/actions";
-import { PageMain } from "@/components/layout/app-header";
+import { ProjectMain } from "@/components/layout/page";
 import { LogViewer } from "@/components/deployments/log-viewer";
 import { StepTrack } from "@/components/deployments/step-track";
 import { Elapsed } from "@/components/projects/elapsed";
@@ -21,11 +21,11 @@ type Props = PageProps<"/projects/[slug]/deployments/[number]">;
 
 export default function DeploymentPage({ params }: Props) {
   return (
-    <PageMain className="gap-5.5">
+    <ProjectMain>
       <Suspense fallback={<Skeleton className="h-[520px]" />}>
         <Detail params={params} />
       </Suspense>
-    </PageMain>
+    </ProjectMain>
   );
 }
 
@@ -34,8 +34,8 @@ const STEP_NAMES: Record<string, string> = { clone: "clone", build: "build", pus
 function headline(d: Deployment) {
   const label = deploymentLabel[d.status];
   const failedStep = d.steps.find((s) => s.status === "failed");
-  if (d.status === "failed") return `✕ FAILED${failedStep ? ` AT ${STEP_NAMES[failedStep.name].toUpperCase()}` : ""}`;
-  return `${label.glyph} ${label.label.toUpperCase()}`;
+  if (d.status === "failed") return `✕ Failed${failedStep ? ` at ${STEP_NAMES[failedStep.name]}` : ""}`;
+  return `${label.glyph} ${label.label}`;
 }
 
 async function Detail({ params }: { params: Props["params"] }) {
@@ -49,19 +49,19 @@ async function Detail({ params }: { params: Props["params"] }) {
   const lines = running ? [] : await readLog(d.id);
   const total = d.finishedAt && d.startedAt ? d.finishedAt.getTime() - d.startedAt.getTime() : null;
   const isLive = d.id === project.liveDeploymentId || (!!d.previewPr && d.status === "live");
-  const tone = isLive ? "text-accent-text" : toneText[deploymentLabel[d.status].tone];
+  const tone = isLive ? "text-ok" : toneText[deploymentLabel[d.status].tone];
 
   return (
     <>
       <div className="flex flex-wrap items-stretch justify-between gap-6">
         <div className="flex flex-col gap-2">
-          <span className={`font-mono text-xs font-bold ${tone}`}>
-            {isLive ? "● LIVE" : headline(d)} · {running ? <>started <Elapsed since={(d.startedAt ?? d.createdAt).toISOString()} /> ago</> : timeAgo(d.finishedAt ?? d.createdAt)}
+          <span className={`text-xs font-semibold tracking-wide ${tone}`}>
+            {isLive ? "● Live" : headline(d)} · {running ? <>started <Elapsed since={(d.startedAt ?? d.createdAt).toISOString()} /> ago</> : timeAgo(d.finishedAt ?? d.createdAt)}
           </span>
-          <h1 className="m-0 font-display text-[34px] font-bold tracking-[-0.02em]">
+          <h2 className="m-0 text-2xl font-bold tracking-[-0.02em]">
             #{d.number} {d.commitMessage ?? d.trigger}
-          </h1>
-          <div className="flex flex-wrap gap-4 font-mono text-[13px] text-muted">
+          </h2>
+          <div className="flex flex-wrap gap-4 font-mono text-xs text-muted">
             <span>{d.branch} @ {shortSha(d.commitSha)}</span>
             <span>{project.buildMode}{project.framework ? ` · ${project.framework}` : ""}</span>
             <span>{d.trigger}</span>
@@ -83,11 +83,16 @@ async function Detail({ params }: { params: Props["params"] }) {
       <LogViewer
         initial={lines}
         streamUrl={running ? `/api/deployments/${d.id}/logs` : undefined}
-        header={<span className="rounded bg-panel-2 px-3.5 py-2 font-mono text-xs">build</span>}
+        title={
+          <>
+            <span className="text-[15px] font-semibold">Build output</span>
+            <span className="text-xs text-log-muted">{d.branch} @ {shortSha(d.commitSha)}</span>
+          </>
+        }
         empty={running ? "Waiting for the worker to pick this up…" : "No build output was recorded."}
       />
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <InfoCard title={d.status === "failed" ? "Error" : "Result"}>
           {d.error ?? (d.status === "live" || d.status === "superseded" ? "Deployed successfully." : running ? "In progress." : "—")}
         </InfoCard>
@@ -99,7 +104,7 @@ async function Detail({ params }: { params: Props["params"] }) {
         </InfoCard>
         )}
         <InfoCard title="Image">
-          <span className="font-mono text-[13px] break-all">{d.imageTag ?? "not built yet"}</span>
+          <span className="font-mono text-xs break-all">{d.imageTag ?? "not built yet"}</span>
         </InfoCard>
       </section>
     </>
@@ -109,8 +114,8 @@ async function Detail({ params }: { params: Props["params"] }) {
 function SideCard({ d, running, isLive, slug, liveNumber, host }: { d: Deployment; running: boolean; isLive: boolean; slug: string; liveNumber?: number; host: string }) {
   if (running) {
     return (
-      <Panel className="flex flex-[0_1_360px] flex-col gap-2 px-4.5 py-4">
-        <span className="font-mono text-xs font-bold text-warn">● IN PROGRESS</span>
+      <Panel className="flex flex-[0_1_360px] flex-col gap-2 border-warn-dot bg-warn-bg px-5 py-4">
+        <span className="text-xs font-semibold text-warn">● In progress</span>
         <span className="leading-normal">{liveNumber ? `#${liveNumber} keeps serving ${host} until this one passes its health check.` : "Nothing is live yet; this will be the first version."}</span>
         <form action={cancel.bind(null, slug, d.number)}>
           <Button type="submit" size="sm">Cancel deploy</Button>
@@ -120,19 +125,19 @@ function SideCard({ d, running, isLive, slug, liveNumber, host }: { d: Deploymen
   }
   if (d.status === "failed" && liveNumber) {
     return (
-      <Panel className="flex flex-[0_1_360px] flex-col gap-1.5 px-4.5 py-4">
-        <span className="font-mono text-xs font-bold text-accent-text">● STILL LIVE: #{liveNumber}</span>
+      <Panel className="flex flex-[0_1_360px] flex-col gap-1.5 bg-ok-bg px-5 py-4">
+        <span className="text-xs font-semibold text-ok">● Still live: #{liveNumber}</span>
         <span className="leading-normal">{host} never went down. #{d.number} was stopped{d.imageTag ? " and its image kept for debugging" : ""}.</span>
       </Panel>
     );
   }
   if (isLive) {
     return (
-      <Panel className="flex flex-[0_1_360px] flex-col gap-1.5 px-4.5 py-4">
-        <span className="font-mono text-xs font-bold text-accent-text">● SERVING</span>
+      <Panel className="flex flex-[0_1_360px] flex-col gap-1.5 bg-ok-bg px-5 py-4">
+        <span className="text-xs font-semibold text-ok">● Serving</span>
         <span className="leading-normal">
           {d.previewPr ? "Preview" : "This deploy"} is live at{" "}
-          <a href={publicUrl(host)} target="_blank" rel="noreferrer" className="text-accent-text hover:underline">{host}</a>.
+          <a href={publicUrl(host)} target="_blank" rel="noreferrer" className="font-medium text-accent-text hover:text-accent-strong">{host}</a>.
         </span>
       </Panel>
     );
@@ -142,8 +147,8 @@ function SideCard({ d, running, isLive, slug, liveNumber, host }: { d: Deploymen
 
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border p-4">
-      <h2 className="m-0 mb-1.5 text-[13px] font-medium text-muted">{title}</h2>
+    <div className="rounded-[18px] border border-border bg-panel p-5">
+      <h3 className="m-0 mb-1.5 text-xs font-medium text-muted">{title}</h3>
       <div className="leading-normal">{children}</div>
     </div>
   );

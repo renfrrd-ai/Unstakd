@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AppHeader } from "@/components/layout/app-header";
 import { ProjectHeader } from "@/components/layout/project-header";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button, buttonClass } from "@/components/ui/button";
@@ -12,7 +13,12 @@ import { redeploy } from "./actions";
 export default function ProjectLayout({ children, params }: LayoutProps<"/projects/[slug]">) {
   return (
     <>
-      <Suspense fallback={<div className="h-28 border-b border-border" />}>
+      <AppHeader>
+        <Suspense fallback={<span className="size-9 rounded-full bg-panel-2" />}>
+          <UserMenu />
+        </Suspense>
+      </AppHeader>
+      <Suspense fallback={<div className="mx-auto h-44 w-full max-w-320" />}>
         <Header params={params} />
       </Suspense>
       {children}
@@ -29,24 +35,26 @@ async function Header({ params }: { params: LayoutProps<"/projects/[slug]">["par
   return (
     <ProjectHeader
       slug={project.slug}
-      crumbs={[{ label: project.name }]}
-      status={<Pill tone={pill.tone} className="font-sans">{pill.label}</Pill>}
+      name={project.name}
+      status={<Pill tone={pill.tone}>{pill.label}</Pill>}
+      meta={
+        <>
+          <a href={`https://github.com/${project.repo}`} target="_blank" rel="noreferrer" className="hover:text-text">{project.repo}</a>
+          <span className="px-1.5 text-dim">·</span>
+          <span className="font-mono text-xs">{project.branch}</span>
+        </>
+      }
       actions={
         <>
           {project.live && (
-            <a href={publicUrl(project.primaryHost)} target="_blank" rel="noreferrer" className={buttonClass("secondary")}>
-              Visit site
+            <a href={publicUrl(project.primaryHost)} target="_blank" rel="noreferrer" className={buttonClass("outline")}>
+              Visit site ↗
             </a>
           )}
           <form action={redeploy.bind(null, project.slug)}>
             <Button type="submit" variant="primary">Redeploy</Button>
           </form>
         </>
-      }
-      trailing={
-        <Suspense>
-          <UserMenu />
-        </Suspense>
       }
     />
   );

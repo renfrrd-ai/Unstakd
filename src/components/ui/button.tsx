@@ -2,27 +2,32 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "dashed";
+// accent = top-bar CTA; primary = the main action inside a page (ink); secondary = soft chip;
+// outline = bordered on panel; ghost = text link; dashed = add-something; danger = destructive.
+type Variant = "accent" | "primary" | "secondary" | "outline" | "ghost" | "dashed" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-accent-ink font-bold hover:brightness-110",
-  secondary: "border border-border-strong bg-panel text-text font-semibold hover:bg-panel-2",
-  ghost: "text-accent-text hover:underline",
-  dashed: "border border-dashed border-border-strong text-text hover:bg-panel-2",
+  accent: "bg-accent text-accent-ink font-semibold hover:brightness-110",
+  primary: "bg-ink text-on-ink font-semibold hover:opacity-90",
+  secondary: "bg-panel-2 text-text font-medium hover:brightness-95 dark:hover:brightness-125",
+  outline: "border border-border-strong bg-panel text-text font-medium hover:bg-panel-2",
+  ghost: "text-accent-text font-medium hover:text-accent-strong",
+  dashed: "border border-dashed border-border-dashed text-text font-medium hover:bg-panel-2",
+  danger: "border border-err-border bg-panel text-err font-semibold hover:bg-err-bg",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 px-2.5 text-xs rounded-md",
-  md: "h-11 px-4 text-sm rounded-lg",
-  lg: "h-13 px-5 text-[15px] rounded-lg",
+  sm: "h-8 px-2.5 text-xs rounded-lg",
+  md: "h-9.5 px-3.5 text-[13px] rounded-[10px]",
+  lg: "h-12 px-5 text-[15px] rounded-xl",
 };
 
 export function buttonClass(variant: Variant = "secondary", size: Size = "md", className?: string) {
   return cn(
     "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50",
     variants[variant],
-    sizes[size],
+    variant === "ghost" ? "h-auto px-0" : sizes[size],
     className,
   );
 }

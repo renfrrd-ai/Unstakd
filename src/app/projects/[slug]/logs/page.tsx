@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { PageMain } from "@/components/layout/app-header";
 import { LogViewer } from "@/components/deployments/log-viewer";
+import { ProjectMain } from "@/components/layout/page";
 import { EmptyState, SectionHeader } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadProject } from "@/server/load-project";
@@ -9,11 +9,11 @@ type Props = PageProps<"/projects/[slug]/logs">;
 
 export default function LogsPage({ params }: Props) {
   return (
-    <PageMain>
-      <Suspense fallback={<Skeleton className="h-[560px]" />}>
+    <ProjectMain>
+      <Suspense fallback={<Skeleton className="h-[560px] bg-log-bg" />}>
         <Logs params={params} />
       </Suspense>
-    </PageMain>
+    </ProjectMain>
   );
 }
 
@@ -33,7 +33,12 @@ async function Logs({ params }: { params: Props["params"] }) {
           initial={[]}
           clock
           streamUrl={`/api/projects/${p.slug}/logs`}
-          header={<span className="rounded bg-panel-2 px-3.5 py-2 font-mono text-xs">runtime · #{p.live.number}</span>}
+          title={
+            <>
+              <span className="text-[15px] font-semibold">{p.name} · runtime</span>
+              <span className="text-xs text-log-muted">#{p.live.number} · {p.live.commitMessage ?? "live"}</span>
+            </>
+          }
           empty="Waiting for output…"
         />
       )}

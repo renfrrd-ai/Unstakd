@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { DomainList } from "@/components/domains/domain-list";
 import { ActionForm, SubmitButton } from "@/components/forms/action-form";
-import { PageMain } from "@/components/layout/app-header";
+import { ProjectMain } from "@/components/layout/page";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/field";
 import { SectionHeader } from "@/components/ui/panel";
@@ -16,11 +16,11 @@ type Props = PageProps<"/projects/[slug]/domains">;
 
 export default function DomainsPage({ params }: Props) {
   return (
-    <PageMain>
+    <ProjectMain>
       <Suspense fallback={<Skeleton className="h-80" />}>
         <Domains params={params} />
       </Suspense>
-    </PageMain>
+    </ProjectMain>
   );
 }
 
@@ -30,11 +30,11 @@ async function Domains({ params }: { params: Props["params"] }) {
   const def = defaultHost(project.slug, env().APPS_DOMAIN);
 
   return (
-    <section aria-labelledby="domains-h" className="flex flex-col gap-3.5">
+    <section aria-labelledby="domains-h" className="flex flex-col gap-4">
       <SectionHeader
         id="domains-h"
         title="Domains"
-        description={<>Point a CNAME at <span className="font-mono text-text">{env().EDGE_HOST}</span>, or an A record for a root domain. HTTPS is issued automatically once DNS resolves.</>}
+        description={<>Point a CNAME at <span className="font-mono text-xs text-text">{env().EDGE_HOST}</span>, or an A record for a root domain. HTTPS is issued automatically once DNS resolves.</>}
         action={
           <ActionForm action={addDomain.bind(null, project.slug)}>
             
@@ -53,12 +53,12 @@ async function Domains({ params }: { params: Props["params"] }) {
           <>
             {!d.isPrimary && d.status === "active" && (
               <form action={makePrimary.bind(null, project.slug, d.id)}>
-                <button type="submit" className="cursor-pointer text-[13px] text-accent-text hover:underline">Make primary</button>
+                <button type="submit" className="cursor-pointer rounded-lg bg-panel-2 px-2.5 py-1 text-xs font-medium hover:brightness-95">Make primary</button>
               </form>
             )}
             {d.hostname !== def && (
               <form action={removeDomain.bind(null, project.slug, d.id)}>
-                <ConfirmButton message={`Remove ${d.hostname}? It will stop serving this app.`} className="cursor-pointer text-[13px] text-err hover:underline">Remove</ConfirmButton>
+                <ConfirmButton message={`Remove ${d.hostname}? It will stop serving this app.`} className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-err hover:bg-err-bg">Remove</ConfirmButton>
               </form>
             )}
           </>

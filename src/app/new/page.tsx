@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ConfigureForm } from "@/components/projects/configure-form";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { BrandMark } from "@/components/ui/brand-mark";
+import { AppHeader } from "@/components/layout/app-header";
+import { PageMain } from "@/components/layout/page";
+import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
@@ -23,29 +24,25 @@ export const metadata: Metadata = { title: "New project" };
 
 export default function NewProjectPage({ searchParams }: PageProps<"/new">) {
   return (
-    <div className="min-h-dvh">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-300 flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-8">
-          <BrandMark />
-          <div className="flex items-center gap-3.5">
-            <Link href="/" className="text-muted hover:text-text">Cancel</Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto flex max-w-300 flex-col gap-7 px-4 py-8 sm:px-8">
+    <>
+      <AppHeader>
+        <Suspense fallback={<span className="size-9 rounded-full bg-panel-2" />}>
+          <UserMenu />
+        </Suspense>
+      </AppHeader>
+      <PageMain className="gap-7">
         <Suspense fallback={<Skeleton className="h-96" />}>
           <Steps searchParams={searchParams} />
         </Suspense>
-      </main>
-    </div>
+      </PageMain>
+    </>
   );
 }
 
 function StepPills({ current }: { current: 1 | 2 }) {
   const steps = ["repo", "configure", "deploy"];
   return (
-    <ol aria-label="Steps" className="m-0 flex list-none flex-wrap gap-2 p-0 font-mono text-xs">
+    <ol aria-label="Steps" className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-xs font-medium">
       {steps.map((label, i) => {
         const n = i + 1;
         return (
@@ -53,9 +50,9 @@ function StepPills({ current }: { current: 1 | 2 }) {
             key={label}
             aria-current={n === current ? "step" : undefined}
             className={cn(
-              "rounded-full px-3.5 py-2",
-              n < current && "bg-panel-2 text-muted",
-              n === current && "bg-accent font-bold text-accent-ink",
+              "rounded-full px-3 py-1.5",
+              n < current && "bg-ok-bg text-ok",
+              n === current && "bg-accent font-semibold text-accent-ink",
               n > current && "border border-border-strong text-muted",
             )}
           >
@@ -79,7 +76,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
       <>
         <div>
           <StepPills current={1} />
-          <h1 className="mt-5 mb-0 font-display text-[40px] leading-tight font-bold tracking-[-0.03em]">Deploy a repo</h1>
+          <h1 className="mt-5 mb-0 text-[28px] leading-tight font-bold tracking-[-0.03em] sm:text-[32px]">Deploy a repo</h1>
           <p className="mt-2 mb-0 text-muted">Pick a repo the Unstakd GitHub App can see (private ones included), or paste any public repo.</p>
         </div>
         <Suspense fallback={<Skeleton className="h-64 max-w-2xl" />}>
@@ -87,7 +84,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
         </Suspense>
         <Panel className="max-w-2xl p-6">
           <form method="get" className="flex flex-col gap-3">
-            <label htmlFor="repo" className="text-[13px] text-muted">Or a public repository</label>
+            <label htmlFor="repo" className="text-xs font-medium text-muted">Or a public repository</label>
             <div className="flex flex-wrap gap-2">
               <Input id="repo" name="repo" mono required defaultValue={raw} placeholder="owner/name or https://github.com/owner/name" className="min-w-0 flex-1" autoComplete="off" />
               <Button type="submit" variant="primary">Continue</Button>
@@ -108,7 +105,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
         <StepPills current={1} />
         <Panel className="max-w-2xl border-err-border p-6">
           <p role="alert" className="m-0 text-err">{(e as Error).message}</p>
-          <Link href="/new" className="mt-3 inline-block text-accent-text hover:underline">← Try another repo</Link>
+          <Link href="/new" className="mt-3 inline-block font-medium text-accent-text hover:text-accent-strong">← Try another repo</Link>
         </Panel>
       </>
     );
@@ -133,7 +130,7 @@ async function RepoPicker() {
     return (
       <Panel className="max-w-2xl p-5 text-muted">
         Private repos and this list need the Unstakd GitHub App. Set it up under{" "}
-        <Link href="/server" className="text-accent-text hover:underline">Server → GitHub App</Link>.
+        <Link href="/server" className="font-medium text-accent-text hover:text-accent-strong">Server → GitHub App</Link>.
       </Panel>
     );
   }
@@ -152,17 +149,17 @@ async function RepoPicker() {
     <section aria-labelledby="repos-h" className="flex max-w-2xl flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="repos-h" className="m-0 text-base font-semibold">Your repositories</h2>
-        <a href={installUrl} className="text-[13px] text-accent-text hover:underline">Add repos on GitHub ↗</a>
+        <a href={installUrl} className="text-[13px] font-medium text-accent-text hover:text-accent-strong">Add repos on GitHub ↗</a>
       </div>
       {repos.length === 0 ? (
         <Panel className="p-5 text-muted">The App isn&apos;t installed on any repos yet. Use “Add repos on GitHub”.</Panel>
       ) : (
-        <List className="max-h-[420px] overflow-y-auto">
+        <List className="max-h-[420px] overflow-y-auto shadow-card">
           {repos.map((r) => (
             <ListRow key={r.repo} href={`/new?repo=${encodeURIComponent(r.repo)}`}>
               <span className="flex min-w-0 items-center gap-2.5">
-                <span className="truncate font-mono text-[13px]">{r.repo}</span>
-                {r.private && <Pill tone="neutral">private</Pill>}
+                <span className="truncate font-medium">{r.repo}</span>
+                {r.private && <Pill tone="neutral" dot={false}>private</Pill>}
                 {used.has(r.repo.toLowerCase()) && <span className="text-[13px] text-muted">on {used.get(r.repo.toLowerCase())}</span>}
               </span>
               <span className="text-[13px] text-muted">{r.pushedAt ? `pushed ${timeAgo(new Date(r.pushedAt))}` : "empty"}</span>

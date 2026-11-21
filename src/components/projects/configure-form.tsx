@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { createProject } from "@/app/new/actions";
 import { ActionForm, SubmitButton } from "@/components/forms/action-form";
-import { Field, Input, Select, SuffixInput } from "@/components/ui/field";
+import { Checkbox, Field, Input, Select, SuffixInput, Textarea } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
 import { SIZES } from "@/lib/validation";
 
@@ -15,7 +15,7 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
   const [health, setHealth] = useState("/");
   const host = `${slug || "your-app"}.${appsDomain}`;
   const isStatic = detected.mode === "static";
-  const builtWith = detected.mode === "dockerfile" ? "your Dockerfile" : isStatic ? (detected.static?.buildCommand ? <code className="font-mono text-[13px]">{detected.static.buildCommand}</code> : "no build step") : "Railpack";
+  const builtWith = detected.mode === "dockerfile" ? "your Dockerfile" : isStatic ? (detected.static?.buildCommand ? <code className="font-mono text-xs">{detected.static.buildCommand}</code> : "no build step") : "Railpack";
 
   return (
     <ActionForm action={createProject} resetOnSuccess={false} className="gap-7">
@@ -24,15 +24,15 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
       <input type="hidden" name="framework" value={detected.framework ?? ""} />
       <div>
         {steps}
-        <h1 className="mt-5 mb-0 font-display text-[34px] leading-tight font-bold tracking-[-0.03em] sm:text-[40px]">
+        <h1 className="mt-5 mb-0 text-[28px] leading-tight font-bold tracking-[-0.03em] sm:text-[32px]">
           Configure <span className="text-accent-text">{slug || repo.split("/")[1]}</span>
         </h1>
-        <p className="mt-2 mb-0 font-mono text-[13px] text-muted">github.com/{repo} · {branch}</p>
+        <p className="mt-2 mb-0 text-sm text-muted">github.com/{repo} · <span className="font-mono text-xs">{branch}</span></p>
       </div>
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
-          <Panel className="flex flex-wrap items-center gap-4 px-5 py-4.5">
-            <div className="flex size-11 items-center justify-center rounded-[10px] bg-panel-2 font-mono font-bold">{detected.framework?.[0] ?? (detected.mode === "dockerfile" ? "D" : "?")}</div>
+          <Panel raised className="flex flex-wrap items-center gap-4 px-5 py-4.5">
+            <div className="flex size-11 items-center justify-center rounded-xl bg-tint-app-strong font-bold">{detected.framework?.[0] ?? (detected.mode === "dockerfile" ? "D" : "?")}</div>
             <div className="flex-[1_1_200px]">
               <div className="font-semibold">
                 {isStatic ? `Static site${detected.framework ? ` · ${detected.framework}` : ""}` : detected.framework ? `Detected ${detected.framework}` : detected.mode === "dockerfile" ? "Detected a Dockerfile" : "Couldn’t detect the stack"}
@@ -71,33 +71,28 @@ export function ConfigureForm({ repo, branch, detected, suggestedSlug, appsDomai
             </Field>
           </div>
           <Panel className="flex flex-col gap-3 p-5">
-            <h2 className="m-0 text-[15px] font-semibold">Environment</h2>
-            <textarea
+            <h2 className="m-0 text-base font-semibold">Environment</h2>
+            <Textarea
               name="dotenv"
               rows={4}
               aria-label="Environment variables in .env format"
               placeholder={"Paste a .env file, e.g.\nNEXT_PUBLIC_SITE=https://example.com\nAPI_KEY=..."}
-              className="rounded-lg border border-border-strong bg-bg p-3 font-mono text-[13px] text-text placeholder:text-dim"
             />
             <p className="m-0 text-[13px] text-muted">Stored encrypted as secrets. You can edit them later under Environment.</p>
           </Panel>
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-panel px-5 py-4">
-            <input type="checkbox" name="createDb" className="size-5 accent-[var(--accent)]" />
-            <span>
-              <span className="block font-semibold">Create a Postgres database for this app</span>
-              <span className="mt-0.5 block text-[13px] text-muted">Injected as DATABASE_URL, backed up nightly</span>
-            </span>
-          </label>
+          <Panel className="px-5 py-4">
+            <Checkbox name="createDb" label="Create a Postgres database for this app" hint="Injected as DATABASE_URL, backed up nightly" />
+          </Panel>
         </div>
-        <Panel className="flex flex-[1_1_300px] flex-col gap-4 p-6">
-          <h2 className="m-0 font-display text-xl font-bold">What happens next</h2>
+        <Panel raised className="flex flex-[1_1_300px] flex-col gap-4 p-6">
+          <h2 className="m-0 text-lg font-bold">What happens next</h2>
           <ol className="m-0 flex list-decimal flex-col gap-2.5 pl-5 leading-snug text-soft marker:text-dim">
             <li>Build with {builtWith}{isStatic ? "" : ", about 1–2 minutes"}</li>
             <li>{isStatic ? "Publish the output and check it has an index.html" : `Start the container and wait for ${health || "/"} on port ${port}`}</li>
-            <li>Go live at <span className="font-mono text-[13px] break-all">{host}</span></li>
+            <li>Go live at <span className="font-medium break-all text-text">{host}</span></li>
             <li>Redeploy from the dashboard; every push to {branch} once the GitHub App is connected</li>
           </ol>
-          <SubmitButton variant="primary" size="lg" pendingLabel="Starting deploy…">Deploy {slug || "app"}</SubmitButton>
+          <SubmitButton variant="accent" size="lg" pendingLabel="Starting deploy…">Deploy {slug || "app"}</SubmitButton>
         </Panel>
       </div>
     </ActionForm>

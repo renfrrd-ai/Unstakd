@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { Fragment, type ReactNode } from "react";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Suspense, type ReactNode } from "react";
 import { NavLinks } from "./nav-links";
 
-export type Crumb = { label: string; href?: string };
-
-export function ProjectHeader({ slug, crumbs, status, actions, trailing }: { slug: string; crumbs: Crumb[]; status?: ReactNode; actions?: ReactNode; trailing?: ReactNode }) {
+// Sits under the top bar on every project page: breadcrumb, name + status, actions, tabs.
+export function ProjectHeader({ slug, name, meta, status, actions }: { slug: string; name: string; meta?: ReactNode; status?: ReactNode; actions?: ReactNode }) {
   const base = `/projects/${slug}`;
   const tabs = [
     { href: base, label: "Overview", exact: true },
@@ -18,28 +16,25 @@ export function ProjectHeader({ slug, crumbs, status, actions, trailing }: { slu
   ];
 
   return (
-    <header className="border-b border-border">
-      <div className="mx-auto flex max-w-300 flex-col gap-2.5 px-4 pt-3.5 sm:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2.5 font-mono text-sm">
-            <span aria-hidden="true" className="inline-block h-4.5 w-2.5 bg-accent" />
-            <Link href="/" className="text-base font-bold text-text">unstakd</Link>
-            {crumbs.map((c) => (
-              <Fragment key={c.label}>
-                <span className="text-dim">/</span>
-                {c.href ? <Link href={c.href} className="text-soft hover:text-text">{c.label}</Link> : <span className="font-bold">{c.label}</span>}
-              </Fragment>
-            ))}
+    <div className="mx-auto flex w-full max-w-320 flex-col gap-5 px-4 pt-8 sm:px-12 sm:pt-11">
+      <nav aria-label="Breadcrumb" className="text-[13px] text-muted">
+        <Link href="/projects" className="hover:text-text">Projects</Link>
+        <span className="px-2 text-dim">/</span>
+        <span className="font-medium text-text">{name}</span>
+      </nav>
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="m-0 text-[28px] leading-[1.15] font-bold tracking-[-0.03em] break-all sm:text-[32px]">{name}</h1>
             {status}
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            {actions}
-            <ThemeToggle />
-            {trailing}
-          </div>
+          {meta && <p className="m-0 text-sm text-muted">{meta}</p>}
         </div>
-        <NavLinks items={tabs} label="Project" variant="tab" />
+        {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
       </div>
-    </header>
+      <Suspense fallback={<NavLinks items={tabs} label="Project" variant="tab" pathname="" />}>
+        <NavLinks items={tabs} label="Project" variant="tab" />
+      </Suspense>
+    </div>
   );
 }

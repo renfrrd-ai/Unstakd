@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageMain } from "@/components/layout/app-header";
+import { PageMain, PageTitle } from "@/components/layout/page";
 import { ActivityList } from "@/components/projects/activity-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { recentActivity } from "@/server/queries";
@@ -9,11 +9,8 @@ export const metadata: Metadata = { title: "Activity" };
 
 export default function ActivityPage() {
   return (
-    <PageMain>
-      <div>
-        <h1 className="m-0 font-display text-[34px] font-bold tracking-[-0.02em]">Activity</h1>
-        <p className="mt-1 text-muted">Deploys, domains, backups and config changes, newest first.</p>
-      </div>
+    <PageMain className="gap-6">
+      <PageTitle title="Activity" description="Deploys, domains, backups and config changes, newest first." />
       <Suspense fallback={<Skeleton className="h-96" />}>
         <AllActivity />
       </Suspense>

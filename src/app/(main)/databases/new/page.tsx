@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { PageMain, PageTitle } from "@/components/layout/app-header";
+import { PageMain, PageTitle } from "@/components/layout/page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NewDatabaseForm } from "@/components/databases/new-database-form";
 import { ENGINES } from "@/server/database-catalog";

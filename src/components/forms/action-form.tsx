@@ -20,7 +20,7 @@ export function ActionForm({ action, children, className, resetOnSuccess = true 
     <form ref={ref} action={formAction} className={cn("flex flex-col gap-3", className)}>
       {children}
       {state?.error && <p role="alert" className="m-0 text-[13px] text-err">{state.error}</p>}
-      {state?.ok && <p role="status" className="m-0 text-[13px] text-accent-text">{state.ok}</p>}
+      {state?.ok && <p role="status" className="m-0 text-[13px] text-ok">{state.ok}</p>}
     </form>
   );
 }

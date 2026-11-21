@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createDatabase } from "@/app/(main)/databases/actions";
 import { ActionForm, SubmitButton } from "@/components/forms/action-form";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Checkbox, Field, Input, Select } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/cn";
 
@@ -13,23 +13,26 @@ export function NewDatabaseForm({ engines, projects, defaultProject }: { engines
   const [engine, setEngine] = useState("postgres");
   const e = engines[engine];
   return (
-    <Panel className="max-w-2xl p-6">
+    <Panel raised className="max-w-2xl p-6">
       <ActionForm action={createDatabase} resetOnSuccess={false}>
         
           <>
-            <fieldset className="m-0 flex gap-3 border-0 p-0">
-              <legend className="mb-2 text-[13px] text-muted">Engine</legend>
+            <fieldset className="m-0 flex flex-wrap gap-3 border-0 p-0">
+              <legend className="mb-2 text-xs font-medium text-muted">Engine</legend>
               {Object.entries(engines).map(([key, v]) => (
                 <label
                   key={key}
                   className={cn(
-                    "flex flex-1 cursor-pointer flex-col gap-1 rounded-lg border p-4",
-                    engine === key ? "border-accent bg-ok-bg" : "border-border-strong bg-panel",
+                    "flex flex-1 cursor-pointer items-start gap-3 rounded-2xl bg-panel p-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent",
+                    engine === key ? "border-[1.5px] border-accent shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_12%,transparent)]" : "border border-border-strong",
                   )}
                 >
+                  <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-tint-data-strong text-[11px] font-semibold text-soft">{key === "postgres" ? "PG" : "RD"}</span>
+                  <span className="flex flex-col gap-0.5">
                   <input type="radio" name="engine" value={key} checked={engine === key} onChange={() => setEngine(key)} className="sr-only" />
                   <span className="font-semibold">{v.label}</span>
-                  <span className="text-[13px] text-muted">Injected as <span className="font-mono">{v.envKey}</span></span>
+                  <span className="text-xs text-muted">Injected as <span className="font-mono">{v.envKey}</span></span>
+                  </span>
                 </label>
               ))}
             </fieldset>
@@ -47,10 +50,7 @@ export function NewDatabaseForm({ engines, projects, defaultProject }: { engines
                 </Select>
               </Field>
             </div>
-            <label className="flex items-center gap-2 text-[13px]">
-              <input type="checkbox" name="backups" defaultChecked={engine === "postgres"} key={engine} className="size-4 accent-[var(--accent)]" />
-              Nightly backups to R2, kept 7 days
-            </label>
+            <Checkbox name="backups" defaultChecked={engine === "postgres"} key={engine} label="Nightly backups" hint="To R2, kept 7 days" />
             <SubmitButton pendingLabel="Creating…" variant="primary" size="lg" className="self-start">Create database</SubmitButton>
           </>
       </ActionForm>

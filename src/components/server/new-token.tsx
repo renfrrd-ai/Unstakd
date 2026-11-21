@@ -20,12 +20,12 @@ export function NewToken({ action }: { action: (s: TokenState, d: FormData) => P
       </div>
       {state?.error && <p role="alert" className="m-0 text-[13px] text-err">{state.error}</p>}
       {state?.token && (
-        <div role="status" className="flex flex-col gap-2 rounded-md border border-border bg-ok-bg p-3">
+        <div role="status" className="flex flex-col gap-2 rounded-xl bg-ok-bg p-3.5">
           <p className="m-0 text-[13px]">
             <span className="font-semibold">{state.name}</span> created. Copy it now: it won&apos;t be shown again.
           </p>
           <div className="flex min-w-0 items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded bg-panel px-2 py-1 font-mono text-[13px]">{state.token}</code>
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-panel px-2.5 py-1.5 font-mono text-xs">{state.token}</code>
             <CopyButton value={state.token} />
           </div>
         </div>

@@ -6,7 +6,7 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <AppHeader>
-        <Suspense fallback={<span className="size-8 rounded-full bg-panel-2" />}>
+        <Suspense fallback={<span className="size-9 rounded-full bg-panel-2" />}>
           <UserMenu />
         </Suspense>
       </AppHeader>

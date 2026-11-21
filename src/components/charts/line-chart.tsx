@@ -74,7 +74,7 @@ export function LineChart({ title, points, unit, reference, now, windowMs = 24 *
   };
 
   return (
-    <figure className="m-0 flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-panel p-4">
+    <figure className="m-0 flex min-w-0 flex-col gap-2 rounded-[18px] border border-border bg-panel p-5">
       <figcaption className="flex items-baseline justify-between gap-3">
         <span className="text-[13px] text-muted">{title}</span>
         <span className="text-[13px] text-muted">last 24 hours</span>
@@ -146,7 +146,7 @@ export function LineChart({ title, points, unit, reference, now, windowMs = 24 *
         </svg>
         {hover && (
           <div
-            className="pointer-events-none absolute top-1 rounded-md border border-border bg-panel px-2.5 py-1.5 shadow-sm"
+            className="pointer-events-none absolute top-1 rounded-[10px] border border-border bg-panel px-2.5 py-1.5 shadow-soft"
             style={{ left: Math.min(Math.max(x(hover.t) - 60, 0), width - 130) }}
           >
             <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { BrandGlyph } from "@/components/ui/brand-mark";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { safeNext } from "@/server/oauth";
@@ -21,14 +22,14 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         <ThemeToggle />
       </div>
       <main className="flex flex-1 items-center justify-center px-4 pb-24">
-        <Panel className="flex w-full max-w-sm flex-col gap-6 p-7">
-          <div className="flex items-center gap-2.5 font-mono text-base font-bold">
-            <span aria-hidden="true" className="inline-block h-4.5 w-2.5 bg-accent" />
+        <Panel raised className="flex w-full max-w-sm flex-col gap-6 p-7">
+          <div className="flex items-center gap-2.5 text-lg font-bold tracking-[-0.02em]">
+            <BrandGlyph />
             unstakd
           </div>
           <div>
-            <h1 className="m-0 font-display text-[34px] leading-tight font-bold tracking-[-0.02em]">Sign in</h1>
-            <p className="mt-2 text-muted">Push a repo, get a live app.</p>
+            <h1 className="m-0 text-[32px] leading-tight font-bold tracking-[-0.03em]">Sign in</h1>
+            <p className="mt-1.5 mb-0 text-muted">Push a repo, get a live app.</p>
           </div>
           <Suspense fallback={<div className="h-11" />}>
             <SignInActions searchParams={searchParams} />
@@ -47,17 +48,17 @@ async function SignInActions({ searchParams }: { searchParams: PageProps<"/login
   return (
     <div className="flex flex-col gap-3">
       {error && (
-        <p role="alert" className="m-0 rounded-lg border border-err-border bg-err-bg px-3.5 py-2.5 text-err">
+        <p role="alert" className="m-0 rounded-xl bg-err-bg px-3.5 py-2.5 text-[13px] text-err">
           {error}
         </p>
       )}
       {devAuthEnabled() ? (
         <form action="/api/auth/dev" method="post">
-          <Button type="submit" variant="primary" className="w-full">Continue as dev user</Button>
-          <p className="mt-3 font-mono text-xs text-muted">GITHUB_CLIENT_ID is unset, so local dev sign-in is on.</p>
+          <Button type="submit" variant="primary" size="lg" className="w-full">Continue as dev user</Button>
+          <p className="mt-3 mb-0 text-xs text-muted">GITHUB_CLIENT_ID is unset, so local dev sign-in is on.</p>
         </form>
       ) : (
-        <a href={`/api/auth/github?next=${encodeURIComponent(next)}`} className={buttonClass("primary", "md", "w-full")}>
+        <a href={`/api/auth/github?next=${encodeURIComponent(next)}`} className={buttonClass("primary", "lg", "w-full")}>
           <GitHubIcon />
           Continue with GitHub
         </a>

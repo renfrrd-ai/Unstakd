@@ -1,41 +1,43 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Fragment, Suspense } from "react";
+import { Suspense } from "react";
 import { ConnectionString } from "@/components/databases/connection-string";
-import { PageMain, PageTitle } from "@/components/layout/app-header";
+import { TunnelPanel } from "@/components/databases/tunnel-panel";
+import { ActionForm, SubmitButton } from "@/components/forms/action-form";
+import { PageMain, PageTitle } from "@/components/layout/page";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { EmptyState, Mono, Panel } from "@/components/ui/panel";
-import { Pill, type Tone } from "@/components/ui/pill";
+import { Checkbox, Input } from "@/components/ui/field";
+import { Meter } from "@/components/ui/meter";
+import { CardHeader, EmptyState, Panel } from "@/components/ui/panel";
+import { Dot, Pill, type Tone } from "@/components/ui/pill";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Inactive, SoonButton } from "@/components/ui/soon";
 import type { Database } from "@/db/schema";
 import { cn } from "@/lib/cn";
+import { decrypt } from "@/lib/crypto";
+import { env } from "@/lib/env";
 import { bytes, timeAgo } from "@/lib/format";
 import { ENGINES, usageCapacityBytes } from "@/server/database-catalog";
 import { connectionUrl, type DbCredentials } from "@/server/db-connection";
-import { TunnelPanel } from "@/components/databases/tunnel-panel";
-import { decrypt } from "@/lib/crypto";
-import { env } from "@/lib/env";
 import { listBackups, listDatabases } from "@/server/queries";
-import { ActionForm, SubmitButton } from "@/components/forms/action-form";
-import { Input } from "@/components/ui/field";
 import { backupNow, deleteDatabase, restoreBackup, retryProvision } from "./actions";
 
 export const metadata: Metadata = { title: "Databases" };
 
 const statusPill: Record<Database["status"], { tone: Tone; label: string }> = {
-  running: { tone: "ok", label: "Running" },
+  running: { tone: "ok", label: "Healthy" },
   provisioning: { tone: "warn", label: "Provisioning" },
   stopped: { tone: "neutral", label: "Stopped" },
   failed: { tone: "err", label: "Failed" },
 };
 
-const engineName = (d: Pick<Database, "engine" | "version">) => `${d.engine === "postgres" ? "PostgreSQL" : "Redis"} ${d.version}`;
+const engineName = (d: Pick<Database, "engine" | "version">) => `${d.engine === "postgres" ? "Postgres" : "Redis"} ${d.version}`;
 
 export default function DatabasesPage({ searchParams }: PageProps<"/databases">) {
   return (
-    <PageMain>
-      <Suspense fallback={<><Skeleton className="h-16" /><Skeleton className="h-96" /></>}>
+    <PageMain className="gap-6">
+      <Suspense fallback={<><Skeleton className="h-16 border-0 bg-transparent" /><Skeleton className="h-96" /></>}>
         <Databases searchParams={searchParams} />
       </Suspense>
     </PageMain>
@@ -46,15 +48,24 @@ type DbRow = Awaited<ReturnType<typeof listDatabases>>[number];
 
 async function Databases({ searchParams }: { searchParams: PageProps<"/databases">["searchParams"] }) {
   const [dbs, params] = await Promise.all([listDatabases(), searchParams]);
-  const header = <PageTitle title="Databases" description={`Private to your server. Backed up nightly to ${process.env.R2_BUCKET ? "Cloudflare R2" : "local disk (R2 not configured yet)"}, kept 7 days.`} />;
+  const pg = dbs.filter((d) => d.engine === "postgres").length;
+  const redis = dbs.length - pg;
+  const counts = [pg && `${pg} Postgres`, redis && `${redis} Redis`].filter(Boolean).join(" and ");
+  const header = (
+    <PageTitle
+      title="Databases"
+      description={`${counts ? `${counts} on this server. ` : ""}Backed up nightly to ${process.env.R2_BUCKET ? "Cloudflare R2" : "local disk (R2 not configured yet)"}, kept 7 days.`}
+      actions={<ButtonLink href="/databases/new" variant="primary">New database</ButtonLink>}
+    />
+  );
   if (dbs.length === 0) {
     return (
       <>
-      {header}
-      <EmptyState title="No databases yet">
-        <p className="mt-0">Create Postgres or Redis with one click; it gets a persistent volume and nightly backups.</p>
-        <ButtonLink href="/databases/new" variant="primary">New database</ButtonLink>
-      </EmptyState>
+        {header}
+        <EmptyState title="No databases yet">
+          <span>Create Postgres or Redis with one click; it gets a persistent volume and nightly backups.</span>
+          <ButtonLink href="/databases/new" variant="primary">New database</ButtonLink>
+        </EmptyState>
       </>
     );
   }
@@ -63,60 +74,56 @@ async function Databases({ searchParams }: { searchParams: PageProps<"/databases
   return (
     <>
       {header}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {dbs.map((d) => (
-          <DatabaseCard key={d.id} db={d} selected={d.id === selected.id} />
-        ))}
+      <div className="flex flex-wrap items-start gap-6">
+        <section aria-label="Database list" className="flex min-w-0 flex-[1_1_320px] flex-col gap-3">
+          {dbs.map((d) => <DatabaseCard key={d.id} db={d} selected={d.id === selected.id} />)}
+        </section>
+        <Detail db={selected} />
       </div>
-      <Detail db={selected} />
     </>
   );
 }
 
 function DatabaseCard({ db, selected }: { db: DbRow; selected: boolean }) {
   const pill = statusPill[db.status];
+  const cap = usageCapacityBytes(db.engine);
+  const pct = db.usageBytes != null ? (100 * db.usageBytes) / cap : null;
   return (
     <Link
       href={`/databases?db=${encodeURIComponent(db.name)}`}
+      scroll={false}
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-panel p-5 text-text hover:border-border-strong",
-        selected ? "border-accent" : "border-border",
+        "flex flex-col gap-3 rounded-2xl bg-panel px-4.5 py-4 text-text",
+        selected ? "border-[1.5px] border-accent shadow-[0_0_0_4px_color-mix(in_srgb,var(--accent)_12%,transparent)]" : "border border-border shadow-soft hover:border-border-strong",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="m-0 text-base font-semibold">{db.name}</h2>
-          <p className="mt-1 mb-0 text-[13px] text-muted">{engineName(db)}</p>
-        </div>
-        <Pill tone={pill.tone}>{pill.label}</Pill>
-      </div>
-      <UsageMeter db={db} />
-      <p className="m-0 text-[13px]">
-        {db.links.length ? (
-          <>
-            Linked to{" "}
-            {db.links.map((l, i) => (
-              <Fragment key={l.link.id}>
-                {i > 0 && ", "}
-                <span className="text-accent-text">{l.project.name}</span>
-              </Fragment>
-            ))}
-          </>
-        ) : (
-          <span className="text-muted">Not linked to a project</span>
-        )}
-      </p>
-      <p className="m-0 text-[13px] text-muted">
-        {!db.backupsEnabled
-          ? "Snapshot only, no nightly backup"
-          : db.lastBackup?.status === "done"
-            ? `Last backup ${timeAgo(db.lastBackup.createdAt)} · ${bytes(db.lastBackup.sizeBytes)}`
-            : db.lastBackup?.status === "failed"
-              ? "Last backup failed"
-              : "No backups yet"}
-      </p>
+      <span className="flex w-full items-center gap-3">
+        <DbTile engine={db.engine} />
+        <span className="flex min-w-0 flex-1 flex-col leading-tight">
+          <span className="truncate text-[15px] font-semibold">{db.name}</span>
+          <span className="truncate text-xs text-muted">
+            {engineName(db)} · {db.links.length ? `used by ${db.links.map((l) => l.project.name).join(", ")}` : "not linked"}
+          </span>
+        </span>
+        <Pill tone={pill.tone} dot={false}>{pill.label}</Pill>
+      </span>
+      <span className="flex w-full flex-col gap-1.25">
+        <span className="flex justify-between text-xs text-muted">
+          <span>{ENGINES[db.engine].usageLabel}</span>
+          <span>{db.usageBytes != null ? <><span className="font-semibold text-text">{bytes(db.usageBytes)}</span> of {bytes(cap)}</> : "measuring…"}</span>
+        </span>
+        <Meter percent={pct} size="sm" label={`${ENGINES[db.engine].usageLabel} used`} />
+      </span>
     </Link>
+  );
+}
+
+function DbTile({ engine, large }: { engine: Database["engine"]; large?: boolean }) {
+  return (
+    <span aria-hidden="true" className={cn("flex shrink-0 items-center justify-center rounded-[10px] bg-tint-data-strong font-semibold text-soft", large ? "size-11 text-[13px]" : "size-9 text-[11px]")}>
+      {engine === "postgres" ? "PG" : "RD"}
+    </span>
   );
 }
 
@@ -126,18 +133,11 @@ function publicCreds(db: DbRow) {
   return { user: c.user, database: c.database };
 }
 
-function UsageMeter({ db }: { db: DbRow }) {
-  const cap = usageCapacityBytes(db.engine);
-  const pct = db.usageBytes != null ? Math.min(100, (100 * db.usageBytes) / cap) : null;
+function Stat({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex justify-between text-[13px] text-muted">
-        <span>{ENGINES[db.engine].usageLabel}</span>
-        <span>{db.usageBytes != null ? `${bytes(db.usageBytes)} / ${bytes(cap)}` : "measuring…"}</span>
-      </div>
-      <div className="mt-1.5 h-1.5 rounded-sm bg-track" role="meter" aria-label={`${ENGINES[db.engine].usageLabel} used`} aria-valuenow={Math.round(pct ?? 0)} aria-valuemin={0} aria-valuemax={100}>
-        {pct != null && <div className={pct > 85 ? "h-1.5 rounded-sm bg-warn" : "h-1.5 rounded-sm bg-accent"} style={{ width: `${Math.max(pct, 1)}%` }} />}
-      </div>
+    <div className="flex flex-col rounded-xl bg-sunken px-3.5 py-3">
+      <span className="text-xs text-muted">{k}</span>
+      <span className="text-lg font-semibold">{v}</span>
     </div>
   );
 }
@@ -145,14 +145,25 @@ function UsageMeter({ db }: { db: DbRow }) {
 async function Detail({ db }: { db: DbRow }) {
   const backups = await listBackups(db.id);
   const link = db.links[0];
-  const label = link ? `Connection string (injected into ${link.project.name} as ${link.link.envKey})` : "Connection string";
+  const pill = statusPill[db.status];
+  const last = db.lastBackup;
 
   return (
-    <Panel className="flex flex-col gap-5 p-6">
-      <section aria-labelledby="detail-h" className="contents">
+    <section aria-labelledby="detail-h" className="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
+      <Panel raised className="flex flex-col gap-5 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="detail-h" className="m-0 text-lg font-semibold">{db.name}</h2>
+          <div className="flex items-center gap-3">
+            <DbTile engine={db.engine} large />
+            <div className="flex min-w-0 flex-col">
+              <span className="text-xs text-muted">
+                {engineName(db)} ·{" "}
+                {link ? <>linked to <Link href={`/projects/${link.project.slug}`} className="font-medium text-accent-text hover:text-accent-strong">{link.project.name}</Link></> : "not linked"}
+              </span>
+              <h2 id="detail-h" className="m-0 text-2xl font-bold tracking-[-0.02em] break-all">{db.name}</h2>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
+            <SoonButton>Open console</SoonButton>
             {db.status === "failed" && (
               <form action={retryProvision.bind(null, db.id)}>
                 <Button type="submit" variant="primary">Retry setup</Button>
@@ -160,71 +171,92 @@ async function Detail({ db }: { db: DbRow }) {
             )}
             {db.backupsEnabled && db.status === "running" && (
               <form action={backupNow.bind(null, db.id)}>
-                <Button type="submit">Back up now</Button>
+                <Button type="submit" variant="primary">Back up now</Button>
               </form>
             )}
           </div>
         </div>
-        <ConnectionString databaseId={db.id} masked={connectionUrl(db, { mask: true })} label={label} />
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+          <Stat k="Status" v={<span className="flex items-center gap-2"><Dot tone={pill.tone} className="size-2" />{pill.label}</span>} />
+          <Stat k={ENGINES[db.engine].usageLabel} v={db.usageBytes != null ? bytes(db.usageBytes) : "—"} />
+          <Stat k="Last backup" v={!db.backupsEnabled ? "Off" : last?.status === "done" ? timeAgo(last.createdAt) : last?.status === "failed" ? "Failed" : "None yet"} />
+          <Stat k="Created" v={timeAgo(db.createdAt)} />
+        </div>
+        <ConnectionString
+          databaseId={db.id}
+          masked={connectionUrl(db, { mask: true })}
+          label="Connection string"
+          note={link ? `Injected into ${link.project.name} as ${link.link.envKey}.` : "Link it to a project to inject it as an environment variable."}
+        />
+      </Panel>
+
+      <div className="flex flex-wrap items-stretch gap-5">
+        <Inactive label="Table stats are coming soon" className="flex min-w-0 flex-[1_1_300px]">
+          <Panel className="flex h-full flex-col gap-3 p-5.5">
+            <CardHeader as="h3" title={db.engine === "postgres" ? "Largest tables" : "Largest keys"} aside="by rows" />
+            <p className="m-0 text-[13px] text-muted">Row counts and sizes per table will show here.</p>
+          </Panel>
+        </Inactive>
+        <Panel className="flex min-w-0 flex-[1_1_300px] flex-col gap-3 p-5.5">
+          <CardHeader as="h3" title="Backups" aside={db.backupsEnabled ? "Nightly, kept 7 days" : "Snapshot only"} />
+          {backups.length === 0 ? (
+            <p className="m-0 text-[13px] text-muted">No backups yet.</p>
+          ) : (
+            <ol className="m-0 flex list-none flex-col p-0 [&>li+li]:border-t [&>li+li]:border-border">
+              {backups.map((b) => (
+                <li key={b.id} className="flex items-center gap-3 py-2.5">
+                  <Dot tone={b.status === "done" ? "ok" : b.status === "failed" ? "err" : "warn"} className="size-2" />
+                  <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                    <span className="font-medium">{b.createdAt.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" })}</span>
+                    <span className="truncate text-xs text-muted">
+                      {b.status === "done" ? `${bytes(b.sizeBytes)} · ${b.storage === "r2" ? "R2" : "local disk"}` : b.status === "failed" ? (b.error ?? "failed") : "running…"}
+                    </span>
+                  </span>
+                  {b.status === "done" && (
+                    <form action={restoreBackup.bind(null, b.id)}>
+                      <ConfirmButton
+                        message={`Restore ${db.name} from this backup? Current data will be replaced.`}
+                        className="cursor-pointer rounded-lg bg-panel-2 px-2.5 py-1.5 text-xs font-medium hover:brightness-95"
+                      >
+                        Restore
+                      </ConfirmButton>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+      </div>
+
+      <Panel className="p-5.5">
         <details className="group">
-          <summary className="inline-flex h-11 cursor-pointer list-none items-center rounded-lg border border-border-strong bg-panel px-4 font-semibold hover:bg-panel-2 [&::-webkit-details-marker]:hidden">
-            Open SSH tunnel
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <span className="flex flex-col">
+              <span className="text-base font-semibold">Connect from your laptop</span>
+              <span className="text-[13px] text-muted">SSH tunnel for TablePlus, DBeaver or psql</span>
+            </span>
+            <span className="text-muted transition group-open:rotate-180" aria-hidden="true">▾</span>
           </summary>
-          <div className="mt-3">
+          <div className="mt-4">
             <TunnelPanel db={db} server={env().EDGE_IP || env().EDGE_HOST} sshUser={process.env.SSH_USER ?? "root"} {...publicCreds(db)} />
           </div>
         </details>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
-            <caption className="pb-2 text-left font-semibold">Backups</caption>
-            <thead>
-              <tr className="text-left text-[13px] text-muted">
-                <th className="py-2.5 font-medium">Taken</th>
-                <th className="py-2.5 font-medium">Size</th>
-                <th className="py-2.5 font-medium">Stored at</th>
-                <th><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {backups.length === 0 && (
-                <tr className="border-t border-border">
-                  <td colSpan={4} className="py-3 text-muted">No backups yet.</td>
-                </tr>
-              )}
-              {backups.map((b) => (
-                <tr key={b.id} className="border-t border-border">
-                  <td className="py-3">{b.createdAt.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" })}</td>
-                  <td>{b.status === "done" ? bytes(b.sizeBytes) : <Pill tone={b.status === "failed" ? "err" : "warn"}>{b.status}</Pill>}</td>
-                  <td><Mono className="text-muted">{b.objectKey ? `${b.storage === "r2" ? "r2" : "local"}://…/${b.objectKey}` : "—"}</Mono></td>
-                  <td className="text-right">
-                    {b.status === "done" && (
-                      <form action={restoreBackup.bind(null, b.id)}>
-                        <ConfirmButton message={`Restore ${db.name} from this backup? Current data will be replaced.`} className="cursor-pointer text-accent-text hover:underline">Restore</ConfirmButton>
-                      </form>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <details className="rounded-lg border border-err-border p-4">
-          <summary className="cursor-pointer font-semibold text-err">Delete {db.name}</summary>
+      </Panel>
+
+      <Panel className="border-err-border p-5.5">
+        <details>
+          <summary className="cursor-pointer text-base font-semibold text-err">Delete {db.name}</summary>
           <ActionForm action={deleteDatabase.bind(null, db.id)} className="mt-3">
-            
-              <>
-                <p className="m-0 text-muted">Stops the container and unlinks it from projects.</p>
-                <label className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" name="keepVolume" defaultChecked className="size-4 accent-[var(--accent)]" /> Keep the data volume (recommended)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <Input name="confirm" mono placeholder={db.name} aria-label={`Type ${db.name} to confirm`} autoComplete="off" className="w-64" />
-                  <SubmitButton pendingLabel="Deleting…" className="border-err-border text-err">Delete database</SubmitButton>
-                </div>
-              </>
+            <p className="m-0 text-muted">Stops the container and unlinks it from projects.</p>
+            <Checkbox name="keepVolume" defaultChecked label="Keep the data volume (recommended)" />
+            <div className="flex flex-wrap gap-2">
+              <Input name="confirm" mono placeholder={db.name} aria-label={`Type ${db.name} to confirm`} autoComplete="off" className="w-64" />
+              <SubmitButton pendingLabel="Deleting…" variant="danger">Delete database</SubmitButton>
+            </div>
           </ActionForm>
         </details>
-      </section>
-    </Panel>
+      </Panel>
+    </section>
   );
 }
