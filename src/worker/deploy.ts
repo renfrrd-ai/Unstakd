@@ -232,13 +232,15 @@ export async function runDeploy(deploymentId: string) {
 
     // 6: point the proxy at the new container, then retire the old one after a grace period.
     // A preview replaces only the previous preview of the same PR; the live deploy is untouched.
+    // Re-read: the live deploy may have changed while this one built (another deploy, a rollback).
+    const [current] = await db().select({ liveDeploymentId: s.projects.liveDeploymentId }).from(s.projects).where(eq(s.projects.id, project.id));
     const [previous] = pr
       ? await db()
           .select()
           .from(s.deployments)
           .where(and(eq(s.deployments.projectId, project.id), eq(s.deployments.previewPr, pr), eq(s.deployments.status, "live")))
-      : project.liveDeploymentId
-        ? await db().select().from(s.deployments).where(eq(s.deployments.id, project.liveDeploymentId))
+      : current?.liveDeploymentId
+        ? await db().select().from(s.deployments).where(eq(s.deployments.id, current.liveDeploymentId))
         : [];
     await step("switch", async () => {
       if (!caddyEnabled()) {
@@ -259,7 +261,8 @@ export async function runDeploy(deploymentId: string) {
     await db().transaction(async (tx) => {
       if (previous) await tx.update(s.deployments).set({ status: "superseded" }).where(eq(s.deployments.id, previous.id));
       await tx.update(s.deployments).set({ status: "live", finishedAt: new Date(), steps }).where(eq(s.deployments.id, d.id));
-      if (!pr) await tx.update(s.projects).set({ liveDeploymentId: d.id }).where(eq(s.projects.id, project.id));
+      // It's serving now, so a project redeployed from standby is active again.
+      if (!pr) await tx.update(s.projects).set({ liveDeploymentId: d.id, state: "active" }).where(eq(s.projects.id, project.id));
     });
     if (previous?.containerName && previous.containerName !== containerName) {
       const grace = pr ? 5_000 : GRACE_MS;
