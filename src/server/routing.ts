@@ -32,7 +32,13 @@ export function upstreamFor(project: Pick<Project, "port">, d: Pick<Deployment, 
   return d.containerName ? { dial: `${d.containerName}:${project.port}` } : null;
 }
 
-export const describeUpstream = (up: Upstream) => ("dial" in up ? up.dial : `files in ${up.root}`);
+export const describeUpstream = (up: Upstream) => ("dial" in up ? up.dial : "root" in up ? `files in ${up.root}` : "offline page");
+
+// Standby: the project's hosts answer 503 "on standby" instead of falling through to the 404.
+export async function applyOfflineRoute(project: Pick<Project, "id" | "slug" | "name">) {
+  const plan = await planRoute(project);
+  await setRoute(project.slug, plan.serve, { offline: `${project.name} is on standby. Start it from the Unstakd dashboard.` }, plan.redirect);
+}
 
 export async function applyRoute(project: Pick<Project, "id" | "slug" | "port">, deployment: Pick<Deployment, "containerName" | "imageTag">) {
   const upstream = upstreamFor(project, deployment);
