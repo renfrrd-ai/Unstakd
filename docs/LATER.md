@@ -44,6 +44,29 @@ JSON, secret = `GITHUB_WEBHOOK_SECRET`, push events).
 5. **Copy `/var/lib/unstakd/master.key` to your password manager.** Without it, env vars and
    database passwords can't be decrypted, even from backups.
 
+## 3b. Auto-redeploy on push to main
+`.github/workflows/deploy.yml` SSHes into the VPS after every push to main and runs
+`scripts/redeploy.sh` (pull, build, migrate, restart dashboard + worker). Until the secrets below
+exist the workflow just fails; redeploy by hand with `sudo bash /opt/unstakd/scripts/redeploy.sh`.
+
+1. On your laptop: `ssh-keygen -t ed25519 -N '' -C unstakd-deploy -f unstakd-deploy`.
+2. On the VPS, append the public key to `/root/.ssh/authorized_keys`, locked to the script:
+   ```
+   restrict,command="/opt/unstakd/scripts/redeploy.sh" ssh-ed25519 AAAA… unstakd-deploy
+   ```
+   (`restrict` turns off port forwarding, a terminal and agent forwarding; `command=` makes the
+   script the only thing this key can run.) Then `chmod +x /opt/unstakd/scripts/redeploy.sh`.
+3. GitHub repo → Settings → Environments → New environment `production`, then add secrets:
+   - `DEPLOY_HOST`: the VPS IP (not dash.unstakd.com, in case Cloudflare proxying changes)
+   - `DEPLOY_USER`: `root` (optional; it's the default)
+   - `DEPLOY_SSH_KEY`: the contents of the private key `unstakd-deploy`
+   - `DEPLOY_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 <VPS IP>`
+4. Delete the local private key, then Actions → Deploy → Run workflow to test it.
+
+The VPS pulls with `git merge --ff-only`, so a commit made directly on the server stops deploys
+until it's removed (the run fails loudly instead of overwriting it). If the repo is private, the
+VPS's clone needs a read-only deploy key or token, the same one it used for the first clone.
+
 ## 4. Off-site backups (Cloudflare R2)
 Create a bucket and an API token with Object Read & Write, then set `R2_ENDPOINT`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. Until then backups go to

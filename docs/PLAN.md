@@ -50,6 +50,7 @@ version serving, rollback live in 2s, backup→damage→restore for Postgres and
 - [x] GitHub App code: installation tokens for private clones, repo picker, App webhooks (owner creates the App, LATER.md § 2)
 - [x] VPS (Vultr), DNS, Cloudflare token; first production run (dash.unstakd.com, unstakd.com)
 - [ ] R2 bucket for off-site backups
+- [ ] Auto-redeploy on push to main: workflow + `scripts/redeploy.sh` built; needs the deploy key and repo secrets (LATER.md § 3b)
 
 ### v1.1 (from the PRD)
 - [x] Preview deploys per pull request at pr-<n>-<app>, removed on close (D8)
