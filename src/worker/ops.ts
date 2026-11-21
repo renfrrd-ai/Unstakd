@@ -6,10 +6,10 @@ import { audit } from "@/server/audit";
 import { notify } from "@/server/notify";
 import { backupDatabase, backupPlatform, pruneBackups, restoreDatabase } from "@/server/backups";
 import { previewRouteId, removeRoute } from "@/server/caddy";
-import { applyRoute, upstreamFor } from "@/server/routing";
+import { applyOfflineRoute, applyRoute, upstreamFor } from "@/server/routing";
 import { pruneSites } from "@/server/static-site";
 import { destroyDatabase, provisionDatabase, recordUsage } from "@/server/databases";
-import { docker, LABEL, removeContainer, startContainer, stopContainer } from "@/server/docker";
+import { docker, LABEL, removeContainer, removeProjectImages, startContainer, stopContainer } from "@/server/docker";
 import { checkDomains } from "./domains";
 import { prune } from "./housekeeping";
 import { sampleAppMetrics } from "./metrics";
@@ -115,8 +115,9 @@ export async function handleOps(job: Job<OpsJob>) {
       if (!live || !upstreamFor(project, live)) return;
       // Static sites have no container: standby just takes the route down.
       if (data.kind === "standby") {
+        // Route to the standby page first so visitors never hit a stopped container.
+        await applyOfflineRoute(project);
         if (live.containerName) await stopContainer(live.containerName);
-        await removeRoute(project.slug);
       } else {
         if (live.containerName) await startContainer(live.containerName);
         await applyRoute(project, live);
@@ -134,8 +135,7 @@ export async function handleOps(job: Job<OpsJob>) {
       await removeRoute(data.slug);
       const containers = await docker().listContainers({ all: true, filters: { label: [`${LABEL}.project=${data.slug}`] } });
       for (const c of containers) await removeContainer(c.Id);
-      const images = await docker().listImages({ filters: { reference: [`unstakd/${data.slug}`] } });
-      for (const img of images) await docker().getImage(img.Id).remove({ force: true }).catch(() => {});
+      await removeProjectImages(data.slug);
       await pruneSites(data.slug).catch((e) => log(`couldn't remove static files: ${(e as Error).message}`));
       return;
     }

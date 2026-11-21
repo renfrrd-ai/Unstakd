@@ -38,6 +38,28 @@ export async function imageExists(ref: string) {
   }
 }
 
+/**
+ * Removes one project's image tags (`unstakd/<slug>:*`) except those in `keep`. Works by tag, never
+ * by image ID: identical builds share an image (two projects from one repo, a redeploy of the same
+ * commit), and removing by ID would take the other project's tags, its live image included.
+ * Docker deletes the image itself only once its last tag is gone and no container uses it.
+ */
+export async function removeProjectImages(slug: string, keep: Set<string> = new Set()) {
+  const repo = `unstakd/${slug}`;
+  const images = await docker().listImages({ filters: { reference: [repo] } });
+  let removed = 0;
+  for (const tag of images.flatMap((img) => img.RepoTags ?? [])) {
+    if (!tag.startsWith(`${repo}:`) || keep.has(tag)) continue;
+    try {
+      await docker().getImage(tag).remove();
+      removed++;
+    } catch {
+      // Still used by a container (e.g. a stopped previous deploy); retry next run.
+    }
+  }
+  return removed;
+}
+
 export async function pullImage(ref: string, onProgress?: (line: string) => void) {
   if (await imageExists(ref)) return;
   const stream = await docker().pull(ref);

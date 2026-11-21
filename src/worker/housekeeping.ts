@@ -1,13 +1,14 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import { logDir } from "@/lib/logs";
 import { caddyEnabled, ensureCaddy, previewRouteId, setRoute } from "@/server/caddy";
 import { previewHost } from "@/lib/domains";
 import { env } from "@/lib/env";
-import { applyRoute, upstreamFor } from "@/server/routing";
-import { docker } from "@/server/docker";
+import { applyOfflineRoute, applyRoute, upstreamFor } from "@/server/routing";
+import { audit } from "@/server/audit";
+import { docker, removeProjectImages } from "@/server/docker";
 import { isSiteRef, pruneSites, siteRefKey } from "@/server/static-site";
 
 const KEEP_IMAGES = Number(process.env.KEEP_IMAGES ?? 10);
@@ -35,17 +36,7 @@ export async function prune(log: (l: string) => void = () => {}) {
     const hasSites = deploys.some((d) => isSiteRef(d.imageTag));
     if (hasSites) removedSites += await pruneSites(p.slug, sites).catch(() => 0);
 
-    const images = await docker().listImages({ filters: { reference: [`unstakd/${p.slug}`] } });
-    for (const img of images) {
-      const tags = img.RepoTags ?? [];
-      if (tags.some((t) => keep.has(t))) continue;
-      try {
-        await docker().getImage(img.Id).remove();
-        removedImages++;
-      } catch {
-        // In use by a container (e.g. a stopped previous deploy); retry next run.
-      }
-    }
+    removedImages += await removeProjectImages(p.slug, new Set([...keep].filter((t): t is string => !!t)));
   }
 
   let removedLogs = 0;
@@ -61,6 +52,38 @@ export async function prune(log: (l: string) => void = () => {}) {
   log(`pruned ${removedImages} images, ${removedSites} static site versions and ${removedLogs} build logs`);
 }
 
+/**
+ * A deploy or backup the worker was running when it stopped (crash, reboot, or Unstakd redeploying
+ * itself) can't resume. Mark them failed so projects aren't stuck "Building" with a Cancel button
+ * that nothing answers. Returns the half-started containers; remove them only after
+ * reconcileRoutes has pointed the proxy back at each project's live deploy.
+ * Must run before the workers start taking jobs.
+ */
+export async function recoverInterrupted(log: (l: string) => void = () => {}) {
+  const stuck = await db()
+    .select({ d: s.deployments, project: s.projects.name })
+    .from(s.deployments)
+    .innerJoin(s.projects, eq(s.projects.id, s.deployments.projectId))
+    .where(inArray(s.deployments.status, ["building", "deploying"]));
+  const orphans: string[] = [];
+  for (const { d, project } of stuck) {
+    const steps = d.steps.map((st) => (st.status === "running" ? { ...st, status: "failed" as const, note: "interrupted" } : st.status === "pending" ? { ...st, status: "skipped" as const } : st));
+    await db()
+      .update(s.deployments)
+      .set({ status: "failed", finishedAt: new Date(), steps, error: "The worker restarted during this deploy. Redeploy to try again; the previous deploy kept serving." })
+      .where(eq(s.deployments.id, d.id));
+    if (d.containerName) orphans.push(d.containerName);
+    await audit("deploy.failed", project, { number: d.number, step: "interrupted" });
+  }
+  const backups = await db()
+    .update(s.backups)
+    .set({ status: "failed", error: "The worker restarted during this backup." })
+    .where(eq(s.backups.status, "running"))
+    .returning({ id: s.backups.id });
+  if (stuck.length || backups.length) log(`marked ${stuck.length} interrupted deploy${stuck.length === 1 ? "" : "s"} and ${backups.length} backup${backups.length === 1 ? "" : "s"} as failed`);
+  return orphans;
+}
+
 // After a reboot, proxy reset or env change, re-apply every live project's route.
 export async function reconcileRoutes(log: (l: string) => void = () => {}) {
   if (!caddyEnabled()) return;
@@ -72,6 +95,10 @@ export async function reconcileRoutes(log: (l: string) => void = () => {}) {
     if (!live || !upstreamFor(p, live)) continue;
     if (live.containerName && !(await docker().getContainer(live.containerName).inspect().then(() => true, () => false))) continue;
     await applyRoute(p, live);
+    applied++;
+  }
+  for (const p of await db().select().from(s.projects).where(and(isNotNull(s.projects.liveDeploymentId), eq(s.projects.state, "standby")))) {
+    await applyOfflineRoute(p);
     applied++;
   }
   const previews = await db()
