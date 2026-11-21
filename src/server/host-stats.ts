@@ -36,6 +36,7 @@ export async function hostStats() {
   const diskUsed = diskTotal - disk.bavail * disk.bsize;
   return {
     hostname: os.hostname(),
+    cores: os.cpus().length,
     cpu: Math.round(cpu),
     memUsedGb: memUsed / GB,
     memTotalGb: memTotal / GB,

@@ -1,4 +1,13 @@
+import type { Tone } from "@/components/ui/pill";
 import type { AuditEvent } from "@/db/schema";
+
+// Colour of an event's dot in activity feeds.
+export function eventTone(action: string): Tone {
+  if (/failed|misconfigured/.test(action)) return "err";
+  if (/standby|removed|deleted|revealed|tunnel/.test(action)) return "neutral";
+  if (/settings|updated|linked|added|created/.test(action)) return "accent";
+  return "ok";
+}
 
 // Human sentence + mono detail for an audit event, as shown in Activity lists.
 export function describeEvent(e: Pick<AuditEvent, "action" | "target" | "details">): { text: string; detail: string } {

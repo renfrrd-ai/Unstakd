@@ -21,7 +21,7 @@ export function projectHealth(project: Pick<Project, "state" | "liveDeploymentId
 export const healthPill: Record<ProjectHealth, { tone: Tone; label: string }> = {
   live: { tone: "ok", label: "Live" },
   building: { tone: "warn", label: "Building" },
-  attention: { tone: "err", label: "Needs attention" },
+  attention: { tone: "err", label: "Failed" },
   standby: { tone: "neutral", label: "Standby" },
   new: { tone: "neutral", label: "Not deployed" },
 };
@@ -42,4 +42,5 @@ export const toneText: Record<Tone, string> = {
   err: "text-err",
   neutral: "text-muted",
   waiting: "text-warn",
+  accent: "text-accent-text",
 };

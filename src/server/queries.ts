@@ -172,3 +172,20 @@ export async function appMetrics(projectId: string, sinceMs = 24 * 3600_000) {
   for (let i = 1; i < rows.length; i++) restarts += Math.max(0, rows[i].restarts - rows[i - 1].restarts);
   return { rows, restarts, now };
 }
+
+// Newest sample per app from the last 10 minutes; older than that means it isn't running.
+export async function latestMetrics() {
+  await requireUser();
+  const rows = await db()
+    .selectDistinctOn([s.appMetrics.projectId])
+    .from(s.appMetrics)
+    .where(gte(s.appMetrics.at, new Date(Date.now() - 10 * 60_000)))
+    .orderBy(s.appMetrics.projectId, desc(s.appMetrics.at));
+  return new Map(rows.map((r) => [r.projectId, r]));
+}
+
+// Deploy and settings events name the project as their target.
+export async function projectActivity(name: string, limit = 5) {
+  await requireUser();
+  return db().select().from(s.auditEvents).where(eq(s.auditEvents.target, name)).orderBy(desc(s.auditEvents.createdAt)).limit(limit);
+}
