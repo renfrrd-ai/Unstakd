@@ -110,6 +110,24 @@ export async function findAppDirs(repo: string, depth = 2): Promise<string[]> {
   return found.sort().slice(0, 50);
 }
 
+const isDockerfileName = (n: string) => n === "Dockerfile" || /^Dockerfile\.[\w.-]+$/.test(n) || /^[\w.-]+\.Dockerfile$/.test(n);
+
+// Dockerfiles up to two folders below `dir`, relative to it. A monorepo's api/Dockerfile often
+// expects the repo root as its build context (it COPYs the lockfile and shared packages).
+export async function findDockerfiles(dir: string, depth = 2): Promise<string[]> {
+  const found: string[] = [];
+  const walk = async (rel: string, level: number) => {
+    const entries = await readdir(path.join(dir, rel), { withFileTypes: true }).catch(() => []);
+    for (const e of entries) {
+      if (e.isFile() && isDockerfileName(e.name)) found.push(path.posix.join(rel, e.name));
+      else if (level < depth && e.isDirectory() && !e.name.startsWith(".") && !SKIP_DIRS.has(e.name)) await walk(path.posix.join(rel, e.name), level + 1);
+    }
+  };
+  await walk("", 0);
+  // The root Dockerfile first, then by path.
+  return found.sort((a, b) => Number(b === "Dockerfile") - Number(a === "Dockerfile") || a.localeCompare(b)).slice(0, 50);
+}
+
 // `dockerfile` is relative to `dir` (the build context).
 export async function detect(dir: string, dockerfile = "Dockerfile"): Promise<Detected> {
   const dockerfileAt = path.join(dir, dockerfile);

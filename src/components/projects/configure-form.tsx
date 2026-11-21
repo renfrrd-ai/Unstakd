@@ -10,14 +10,33 @@ import { SIZES } from "@/lib/validation";
 
 import type { Detected } from "@/server/builder";
 
-type Props = { repo: string; branch: string; detected: Detected; rootDir: string | null; appDirs: string[]; suggestedSlug: string; appsDomain: string; steps: ReactNode };
+type Props = {
+  repo: string;
+  branch: string;
+  detected: Detected;
+  rootDir: string | null;
+  dockerfile: string | null;
+  appDirs: string[];
+  dockerfiles: string[];
+  suggestedSlug: string;
+  appsDomain: string;
+  steps: ReactNode;
+};
 
-export function ConfigureForm({ repo, branch, detected, rootDir, appDirs, suggestedSlug, appsDomain, steps }: Props) {
+export function ConfigureForm({ repo, branch, detected, rootDir, dockerfile, appDirs, dockerfiles, suggestedSlug, appsDomain, steps }: Props) {
   const router = useRouter();
   const [detecting, startDetect] = useTransition();
-  // Picking a folder re-runs detection on the server for that folder.
-  const pickRoot = (dir: string) => startDetect(() => router.replace(`/new?repo=${encodeURIComponent(repo)}${dir ? `&root=${encodeURIComponent(dir)}` : ""}`, { scroll: false }));
+  // Picking a folder or a Dockerfile re-runs detection on the server.
+  const redetect = (root: string | null, df: string | null) => {
+    const q = new URLSearchParams({ repo });
+    if (root) q.set("root", root);
+    if (df) q.set("dockerfile", df);
+    startDetect(() => router.replace(`/new?${q}`, { scroll: false }));
+  };
   const dirs = rootDir && !appDirs.includes(rootDir) ? [rootDir, ...appDirs] : appDirs;
+  const hasDefault = dockerfiles.includes("Dockerfile");
+  // Only worth asking when there's a Dockerfile other than the one used by default.
+  const askDockerfile = dockerfiles.some((f) => f !== "Dockerfile");
   const [slug, setSlug] = useState(suggestedSlug);
   const [port, setPort] = useState(String(detected.port ?? 3000));
   const [health, setHealth] = useState("/");
@@ -31,6 +50,7 @@ export function ConfigureForm({ repo, branch, detected, rootDir, appDirs, sugges
       <input type="hidden" name="buildMode" value={detected.mode} />
       <input type="hidden" name="framework" value={detected.framework ?? ""} />
       <input type="hidden" name="rootDir" value={rootDir ?? ""} />
+      <input type="hidden" name="dockerfilePath" value={dockerfile ?? ""} />
       <div>
         {steps}
         <h1 className="mt-5 mb-0 text-[28px] leading-tight font-bold tracking-[-0.03em] sm:text-[32px]">
@@ -48,11 +68,11 @@ export function ConfigureForm({ repo, branch, detected, rootDir, appDirs, sugges
               </div>
               <div className="mt-0.5 text-[13px] text-muted">
                 {detected.mode === "dockerfile"
-                  ? "Your Dockerfile will be used to build it."
+                  ? <>Built with <span className="font-mono text-xs">{dockerfile ?? "Dockerfile"}</span>{rootDir ? <> in <span className="font-mono text-xs">{rootDir}/</span></> : null}.</>
                   : isStatic
                     ? "Caddy serves the built files directly: no container, nothing to keep running."
                     : dirs.length > 0 && !rootDir
-                      ? "Railpack will build it. For a monorepo, pick the app’s folder as the root directory."
+                      ? "Railpack will build it. For a monorepo, pick the app’s Dockerfile or its folder below."
                       : "Railpack will build it. Add a Dockerfile to override."}
               </div>
             </div>
@@ -60,10 +80,22 @@ export function ConfigureForm({ repo, branch, detected, rootDir, appDirs, sugges
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {dirs.length > 0 && (
               <Field label={detecting ? "Root directory · detecting…" : "Root directory"} className="sm:col-span-2">
-                <Select value={rootDir ?? ""} disabled={detecting} onChange={(e) => pickRoot(e.target.value)} className="font-mono text-xs">
+                <Select value={rootDir ?? ""} disabled={detecting} onChange={(e) => redetect(e.target.value || null, null)} className="font-mono text-xs">
                   <option value="">/ (repo root)</option>
                   {dirs.map((d) => <option key={d} value={d}>{d}/</option>)}
                 </Select>
+              </Field>
+            )}
+            {askDockerfile && (
+              <Field label="Dockerfile" className="sm:col-span-2">
+                <Select value={dockerfile ?? ""} disabled={detecting} onChange={(e) => redetect(rootDir, e.target.value || null)} className="font-mono text-xs">
+                  <option value="">{hasDefault ? "Dockerfile" : "None · build with Railpack"}</option>
+                  {dockerfiles.filter((f) => f !== "Dockerfile").map((f) => <option key={f} value={f}>{f}</option>)}
+                </Select>
+                <span className="font-normal">
+                  Built with {rootDir ? <span className="font-mono">{rootDir}/</span> : "the repo root"} as its context. If the Dockerfile copies files from elsewhere in the repo
+                  (the lockfile, shared packages), keep the root directory at the repo root and pick it here.
+                </span>
               </Field>
             )}
             <Field label="Subdomain">

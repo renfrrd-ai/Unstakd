@@ -5,14 +5,23 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { REPO } from "@/lib/validation";
-import { detect, findAppDirs, resolveInRepo, type Detected } from "./builder";
+import { detect, findAppDirs, findDockerfiles, resolveInRepo, type Detected } from "./builder";
 import { cloneRepo } from "./git";
 import { tokenForRepo } from "./github-app";
 
 const run = promisify(execFile);
 
-// `appDirs`: subfolders that look like apps of their own, offered as the root directory in monorepos.
-export type RepoInfo = { repo: string; defaultBranch: string; detected: Detected; rootDir: string | null; appDirs: string[] };
+// Monorepos: `appDirs` are subfolders that look like apps of their own (root directory choices);
+// `dockerfiles` are the Dockerfiles inside the chosen root directory, relative to it.
+export type RepoInfo = {
+  repo: string;
+  defaultBranch: string;
+  detected: Detected;
+  rootDir: string | null;
+  dockerfile: string | null;
+  appDirs: string[];
+  dockerfiles: string[];
+};
 
 // Accepts "owner/name" or a GitHub URL.
 export function parseRepo(input: string): string | null {
@@ -24,7 +33,7 @@ export function parseRepo(input: string): string | null {
   return REPO.test(cleaned) ? cleaned : null;
 }
 
-export async function inspectRepo(repo: string, opts: { token?: string; rootDir?: string | null } = {}): Promise<RepoInfo> {
+export async function inspectRepo(repo: string, opts: { token?: string; rootDir?: string | null; dockerfile?: string | null } = {}): Promise<RepoInfo> {
   let token = opts.token;
   token ??= (await tokenForRepo(repo).catch(() => null)) ?? undefined;
   const url = token ? `https://x-access-token:${token}@github.com/${repo}.git` : `https://github.com/${repo}.git`;
@@ -39,9 +48,12 @@ export async function inspectRepo(repo: string, opts: { token?: string; rootDir?
   try {
     const src = path.join(dir, "src");
     await cloneRepo(repo, defaultBranch, src, { token });
-    const appDirs = await findAppDirs(src);
     const rootDir = opts.rootDir ?? null;
-    return { repo, defaultBranch, detected: await detect(await resolveInRepo(src, rootDir)), rootDir, appDirs };
+    const appDir = await resolveInRepo(src, rootDir);
+    const [appDirs, dockerfiles] = await Promise.all([findAppDirs(src), findDockerfiles(appDir)]);
+    // An unknown pick (stale link) falls back to the default.
+    const dockerfile = opts.dockerfile && dockerfiles.includes(opts.dockerfile) ? opts.dockerfile : null;
+    return { repo, defaultBranch, detected: await detect(appDir, dockerfile ?? "Dockerfile"), rootDir, dockerfile, appDirs, dockerfiles };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { dockerfilePathSchema, rootDirSchema } from "@/lib/validation";
-import { detect, findAppDirs, resolveInRepo } from "./builder";
+import { detect, findAppDirs, findDockerfiles, resolveInRepo } from "./builder";
 
 let dir: string;
 beforeEach(async () => (dir = await mkdtemp(path.join(os.tmpdir(), "unstakd-builder-"))));
@@ -59,5 +59,17 @@ describe("monorepo builds", () => {
     expect(rootDirSchema.safeParse("/srv").success).toBe(false);
     expect(dockerfilePathSchema.parse("docker/api.Dockerfile")).toBe("docker/api.Dockerfile");
     expect(dockerfilePathSchema.safeParse("a b").success).toBe(false);
+  });
+});
+
+describe("Dockerfile discovery", () => {
+  it("lists Dockerfiles below the root directory, the default first", async () => {
+    await monorepo();
+    await writeFile(path.join(dir, "Dockerfile"), "FROM alpine\n");
+    await writeFile(path.join(dir, "api", "worker.Dockerfile"), "FROM alpine\n");
+    await mkdir(path.join(dir, "web", "node_modules", "y"), { recursive: true });
+    await writeFile(path.join(dir, "web", "node_modules", "y", "Dockerfile"), "FROM alpine\n");
+    expect(await findDockerfiles(dir)).toEqual(["Dockerfile", "api/Dockerfile", "api/worker.Dockerfile", "scanner/Dockerfile"]);
+    expect(await findDockerfiles(path.join(dir, "api"))).toEqual(["Dockerfile", "worker.Dockerfile"]);
   });
 });

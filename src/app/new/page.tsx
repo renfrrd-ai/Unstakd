@@ -11,7 +11,7 @@ import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { env } from "@/lib/env";
-import { newSlugSchema, rootDirSchema } from "@/lib/validation";
+import { dockerfilePathSchema, newSlugSchema, rootDirSchema } from "@/lib/validation";
 import { db, schema as s } from "@/db";
 import { timeAgo } from "@/lib/format";
 import { appInfo, githubAppConfigured, listAppRepos } from "@/server/github-app";
@@ -71,6 +71,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
   const raw = typeof params.repo === "string" ? params.repo : "";
   const repo = raw ? parseRepo(raw) : null;
   const root = rootDirSchema.safeParse(typeof params.root === "string" ? params.root : "");
+  const dockerfile = dockerfilePathSchema.safeParse(typeof params.dockerfile === "string" ? params.dockerfile : "");
 
   if (!repo) {
     return (
@@ -99,7 +100,7 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
 
   let info;
   try {
-    info = await inspectRepo(repo, { rootDir: root.success ? root.data : null });
+    info = await inspectRepo(repo, { rootDir: root.success ? root.data : null, dockerfile: dockerfile.success ? dockerfile.data : null });
   } catch (e) {
     return (
       <>
@@ -119,7 +120,9 @@ async function Steps({ searchParams }: { searchParams: PageProps<"/new">["search
       branch={info.defaultBranch}
       detected={info.detected}
       rootDir={info.rootDir}
+      dockerfile={info.dockerfile}
       appDirs={info.appDirs}
+      dockerfiles={info.dockerfiles}
       suggestedSlug={suggested.success ? suggested.data : ""}
       appsDomain={env().APPS_DOMAIN}
       steps={<StepPills current={2} />}
