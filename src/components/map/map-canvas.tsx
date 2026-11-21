@@ -115,7 +115,9 @@ export function MapCanvas({ nodes, edges, zoneLabel, focus }: { nodes: MapNode[]
     e.stopPropagation();
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { type: "node", id, sx: e.clientX, sy: e.clientY, ox: pos[id].x, oy: pos[id].y, moved: false };
+    // Nodes added by a live refresh have no saved position yet; start from their default.
+    const at = pos[id] ?? defaults[id];
+    drag.current = { type: "node", id, sx: e.clientX, sy: e.clientY, ox: at.x, oy: at.y, moved: false };
     setDragId(id);
   };
 
@@ -200,8 +202,8 @@ export function MapCanvas({ nodes, edges, zoneLabel, focus }: { nodes: MapNode[]
           )}
           <svg aria-hidden className="absolute top-0 left-0 overflow-visible" width="1" height="1">
             {edges.map((e) => {
-              const a = pos[e.from];
-              const b = pos[e.to];
+              const a = pos[e.from] ?? defaults[e.from];
+              const b = pos[e.to] ?? defaults[e.to];
               if (!a || !b) return null;
               const hl = e.from === sel || e.to === sel;
               const d = edgePath(a, b);
