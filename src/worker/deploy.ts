@@ -7,6 +7,7 @@ import type { Deployment, DeployStep, Project } from "@/db/schema";
 import { decrypt } from "@/lib/crypto";
 import { defaultHost, previewHost } from "@/lib/domains";
 import { env } from "@/lib/env";
+import { publishChange } from "@/lib/changes";
 import { cancelKey, queues } from "@/lib/queue";
 import { createRedis, redis } from "@/lib/redis";
 import { audit } from "@/server/audit";
@@ -40,7 +41,10 @@ export async function runDeploy(deploymentId: string) {
   const log = new DeployLogger(d.id, pub);
   await log.init();
   const steps: DeployStep[] = (["clone", "build", "push", "start", "health", "switch"] as const).map((name) => ({ name, status: "pending" }));
-  const save = (patch: Partial<Deployment> = {}) => db().update(s.deployments).set({ ...patch, steps }).where(eq(s.deployments.id, d.id));
+  const save = async (patch: Partial<Deployment> = {}) => {
+    await db().update(s.deployments).set({ ...patch, steps }).where(eq(s.deployments.id, d.id));
+    await publishChange("deploy");
+  };
   await save({ status: "building", startedAt: new Date() });
 
   const abort = new AbortController();

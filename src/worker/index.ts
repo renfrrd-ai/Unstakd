@@ -1,4 +1,5 @@
 import { Queue, Worker } from "bullmq";
+import { publishChange } from "@/lib/changes";
 import { DEPLOY_QUEUE, OPS_QUEUE, type DeployJob, type OpsJob } from "@/lib/queue";
 import { createRedis } from "@/lib/redis";
 import { reconcileRoutes } from "./housekeeping";
@@ -17,9 +18,20 @@ const deploys = new Worker<DeployJob>(
   { connection: createRedis(), concurrency, lockDuration: 60_000 },
 );
 
+// Scheduled housekeeping runs every minute or so; it only matters to open pages once it has finished.
+const quiet = new Set(["app-stats", "db-stats", "domain-check", "prune"]);
 for (const [name, w] of [["ops", ops], ["deploys", deploys]] as const) {
-  w.on("failed", (job, err) => console.error(`[${name}] ${job?.name} ${job?.id} failed: ${err.message}`));
-  w.on("completed", (job) => console.log(`[${name}] ${job.name} ${job.id} done`));
+  w.on("active", (job) => {
+    if (!quiet.has(job.name)) void publishChange(job.name);
+  });
+  w.on("failed", (job, err) => {
+    console.error(`[${name}] ${job?.name} ${job?.id} failed: ${err.message}`);
+    void publishChange(job?.name ?? name);
+  });
+  w.on("completed", (job) => {
+    console.log(`[${name}] ${job.name} ${job.id} done`);
+    void publishChange(job.name);
+  });
 }
 
 const scheduler = new Queue<OpsJob>(OPS_QUEUE, { connection: createRedis() });

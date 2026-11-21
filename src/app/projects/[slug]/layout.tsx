@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppHeader } from "@/components/layout/app-header";
+import { LiveUpdates } from "@/components/layout/live-updates";
 import { ProjectHeader } from "@/components/layout/project-header";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button, buttonClass } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export default function ProjectLayout({ children, params }: LayoutProps<"/projec
           <UserMenu />
         </Suspense>
       </AppHeader>
+      <LiveUpdates />
       <Suspense fallback={<div className="mx-auto h-44 w-full max-w-320" />}>
         <Header params={params} />
       </Suspense>

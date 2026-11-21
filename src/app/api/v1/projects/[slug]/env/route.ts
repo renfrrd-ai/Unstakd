@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { connection } from "next/server";
 import { z } from "zod";
 import { db, schema as s } from "@/db";
+import { publishChange } from "@/lib/changes";
 import { decrypt } from "@/lib/crypto";
 import { envKeySchema } from "@/lib/validation";
 import { api, projectBySlug } from "@/server/api-v1";
@@ -45,5 +46,6 @@ export const DELETE = api(async (req, ctx: Ctx) => {
     .where(and(eq(s.envVars.projectId, project.id), inArray(s.envVars.key, keys)))
     .returning({ key: s.envVars.key });
   await audit("env.updated", project.name, { keys: `removed ${keys.join(", ")}`, via: "cli" });
+  await publishChange("env");
   return { removed: gone.map((g) => g.key) };
 });

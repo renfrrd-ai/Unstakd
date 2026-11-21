@@ -1,6 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db, schema as s } from "@/db";
 import type { Deployment, Project } from "@/db/schema";
+import { publishChange } from "@/lib/changes";
 import { cancelKey, queues } from "@/lib/queue";
 import { redis } from "@/lib/redis";
 import { audit } from "./audit";
@@ -40,6 +41,7 @@ export async function createDeployment(project: Project, opts: NewDeploy): Promi
     return row;
   });
   await queues().deploy.add("deploy", { deploymentId: deployment.id }, { jobId: deployment.id });
+  await publishChange("deploy");
   if (opts.rollbackOf) await audit("deploy.rollback", project.name, { number: opts.rollbackOf.number });
   return deployment;
 }
@@ -52,6 +54,7 @@ export async function cancelDeployment(deployment: Deployment) {
       .update(s.deployments)
       .set({ status: "cancelled", finishedAt: new Date() })
       .where(eq(s.deployments.id, deployment.id));
+    await publishChange("deploy");
     return;
   }
   await redis().set(cancelKey(deployment.id), "1", "EX", 3600);

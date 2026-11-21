@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { AppHeader } from "@/components/layout/app-header";
+import { LiveUpdates } from "@/components/layout/live-updates";
 import { UserMenu } from "@/components/layout/user-menu";
 
 export default function MainLayout({ children }: LayoutProps<"/">) {
@@ -10,6 +11,7 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
           <UserMenu />
         </Suspense>
       </AppHeader>
+      <LiveUpdates />
       {children}
     </>
   );

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db, schema as s } from "@/db";
+import { publishChange } from "@/lib/changes";
 import { encrypt } from "@/lib/crypto";
 
 export async function upsertEnv(projectId: string, entries: [string, string][], secret: boolean) {
@@ -11,4 +12,5 @@ export async function upsertEnv(projectId: string, entries: [string, string][], 
       target: [s.envVars.projectId, s.envVars.key],
       set: { valueEnc: sql`excluded.value_enc`, secret: sql`excluded.secret`, updatedAt: new Date() },
     });
+  await publishChange("env");
 }
